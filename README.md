@@ -14,11 +14,11 @@ Vote
 
 {
 
-&nbsp; "id": 1,
+  "id": 1,
 
-&nbsp; "name": "Max",
+  "name": "Max",
 
-&nbsp; "timeSlotIds": \[3, 5, 7]
+  "timeSlotIds": \[3, 5, 7]
 
 }
 
@@ -30,11 +30,11 @@ Timeslot
 
 {
 
-&nbsp; "id": 5,
+  "id": 5,
 
-&nbsp; "weekday": "MONDAY",
+  "weekday": "MONDAY",
 
-&nbsp; "dateTime": "2025-03-17T19:30:00"
+  "dateTime": "2025-03-17T19:30:00"
 
 }
 
@@ -46,33 +46,29 @@ VotingWeek
 
 {
 
-&nbsp; "id": 12,
+  "id": 12,
 
-&nbsp; "deadline": "2025-03-15T23:59:59",
+  "deadline": "2025-03-15T23:59:59",
 
-&nbsp; "timeSlots": \[
+  "timeSlots": \[
 
-&nbsp;   {
+    {
 
-&nbsp;     "id": 3,
+      "id": 3,
 
-&nbsp;     "weekday": "TUESDAY",
+      "dateTime": "2025-03-18T18:00:00"
 
-&nbsp;     "dateTime": "2025-03-18T18:00:00"
+    },
 
-&nbsp;   },
+    {
 
-&nbsp;   {
+      "id": 5,
 
-&nbsp;     "id": 5,
+      "dateTime": "2025-03-20T19:30:00"
 
-&nbsp;     "weekday": "THURSDAY",
+    }
 
-&nbsp;     "dateTime": "2025-03-20T19:30:00"
-
-&nbsp;   }
-
-&nbsp; ]
+  ]
 
 }
 
