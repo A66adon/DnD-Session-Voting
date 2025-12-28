@@ -12,11 +12,15 @@ Vote
 
 
 
-id - int
+{
 
-Name - String
+&nbsp; "id": 1,
 
-timeslots - int List
+&nbsp; "name": "Max",
+
+&nbsp; "timeSlotIds": \[3, 5, 7]
+
+}
 
 
 
@@ -24,13 +28,15 @@ Timeslot
 
 
 
-id - int
+{
 
-Weekday - String
+&nbsp; "id": 5,
 
-Date - Datetime soll variabel sein für jede Woche neu
+&nbsp; "weekday": "MONDAY",
 
-Time - String
+&nbsp; "dateTime": "2025-03-17T19:30:00"
+
+}
 
 
 
@@ -38,13 +44,35 @@ VotingWeek
 
 
 
-id - int
+{
 
-Weekslots - Lists  Timeslots
+&nbsp; "id": 12,
 
-Deadline - datetime
+&nbsp; "deadline": "2025-03-15T23:59:59",
 
+&nbsp; "timeSlots": \[
 
+&nbsp;   {
 
+&nbsp;     "id": 3,
 
+&nbsp;     "weekday": "TUESDAY",
+
+&nbsp;     "dateTime": "2025-03-18T18:00:00"
+
+&nbsp;   },
+
+&nbsp;   {
+
+&nbsp;     "id": 5,
+
+&nbsp;     "weekday": "THURSDAY",
+
+&nbsp;     "dateTime": "2025-03-20T19:30:00"
+
+&nbsp;   }
+
+&nbsp; ]
+
+}
 
