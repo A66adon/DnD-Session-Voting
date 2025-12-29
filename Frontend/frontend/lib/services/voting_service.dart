@@ -86,19 +86,26 @@ class VotingService {
   }
   
   /// Submit a vote (requires authentication)
-  Future<void> submitVote(List<int> timeSlotIds) async {
+  /// [timeSlotIds] - List of time slot IDs the user is available for
+  /// [preferredTimeSlotId] - The user's preferred time slot ID (must be in timeSlotIds)
+  Future<void> submitVote(List<int> timeSlotIds, {int? preferredTimeSlotId}) async {
     if (!_authService.isLoggedIn) {
       throw Exception('Not authenticated. Please login first.');
     }
-    
+
+    final body = <String, dynamic>{
+      'timeSlotIds': timeSlotIds,
+    };
+    if (preferredTimeSlotId != null) {
+      body['preferredTimeSlotId'] = preferredTimeSlotId;
+    }
+
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}${ApiConfig.voteEndpoint}'),
       headers: _authService.authHeaders,
-      body: jsonEncode({
-        'timeSlotIds': timeSlotIds,
-      }),
+      body: jsonEncode(body),
     );
-    
+
     if (response.statusCode == 200) {
       return;
     } else if (response.statusCode == 401) {

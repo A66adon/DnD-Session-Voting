@@ -4,13 +4,13 @@ class VotingWeek {
   final int id;
   final DateTime deadline;
   final List<TimeSlot> timeSlots;
-  
+
   VotingWeek({
     required this.id,
     required this.deadline,
     required this.timeSlots,
   });
-  
+
   factory VotingWeek.fromJson(Map<String, dynamic> json) {
     return VotingWeek(
       id: json['id'] as int,

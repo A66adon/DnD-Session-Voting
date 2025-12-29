@@ -1,18 +1,32 @@
-class VoterInfo {
-  final String voterName;
-  final List<DateTime> votedTimeslots;
-  
-  VoterInfo({
-    required this.voterName,
-    required this.votedTimeslots,
+import 'time_slot.dart';
+
+/// Response from the POST /vote endpoint
+class VoteResponse {
+  final int id;
+  final String username;
+  final DateTime votedAt;
+  final List<TimeSlot> selectedTimeSlots;
+  final TimeSlot? preferredTimeSlot;
+
+  VoteResponse({
+    required this.id,
+    required this.username,
+    required this.votedAt,
+    required this.selectedTimeSlots,
+    this.preferredTimeSlot,
   });
-  
-  factory VoterInfo.fromJson(Map<String, dynamic> json) {
-    return VoterInfo(
-      voterName: json['voterName'] as String,
-      votedTimeslots: (json['votedTimeslots'] as List<dynamic>)
-          .map((e) => DateTime.parse(e as String))
+
+  factory VoteResponse.fromJson(Map<String, dynamic> json) {
+    return VoteResponse(
+      id: json['id'] as int,
+      username: json['username'] as String,
+      votedAt: DateTime.parse(json['votedAt'] as String),
+      selectedTimeSlots: (json['selectedTimeSlots'] as List<dynamic>)
+          .map((e) => TimeSlot.fromJson(e as Map<String, dynamic>))
           .toList(),
+      preferredTimeSlot: json['preferredTimeSlot'] != null
+          ? TimeSlot.fromJson(json['preferredTimeSlot'] as Map<String, dynamic>)
+          : null,
     );
   }
 }
