@@ -47,8 +47,24 @@ public class VotingService {
     public WeekResultDTO getWeekResults(Long weekId) {
         VotingWeek week = votingWeekRepository.findById(weekId)
                 .orElseThrow(() -> new RuntimeException("Week not found"));
+        return buildWeekResultDTO(week);
+    }
 
-        List<Vote> votes = voteRepository.findVotesByVotingWeek(weekId);
+    /**
+     * Get results for the current active week
+     */
+    @Transactional(readOnly = true)
+    public WeekResultDTO getCurrentWeekResults() {
+        VotingWeek currentWeek = getCurrentWeek();
+        return buildWeekResultDTO(currentWeek);
+    }
+
+    /**
+     * Build a WeekResultDTO from a VotingWeek
+     * Contains vote results, timeslot statistics, and winner determination
+     */
+    private WeekResultDTO buildWeekResultDTO(VotingWeek week) {
+        List<Vote> votes = voteRepository.findVotesByVotingWeek(week.getId());
 
         // Create vote results showing who voted for what
         List<VoteResultDTO> voteResults = votes.stream()
@@ -93,65 +109,6 @@ public class VotingService {
         WeekResultDTO result = new WeekResultDTO();
         result.setWeekId(week.getId());
         result.setDeadline(week.getDeadline());
-        result.setTimeSlots(timeSlotStats);
-        result.setVotes(voteResults);
-        result.setWinnerTimeSlot(winner);
-
-        return result;
-    }
-
-    /**
-     * Get results for the current active week
-     */
-    @Transactional(readOnly = true)
-    public WeekResultDTO getCurrentWeekResults() {
-        VotingWeek currentWeek = getCurrentWeek();
-
-        List<Vote> votes = voteRepository.findVotesByVotingWeek(currentWeek.getId());
-
-        // Create vote results showing who voted for what
-        List<VoteResultDTO> voteResults = votes.stream()
-                .map(vote -> new VoteResultDTO(
-                        vote.getVoterName(),
-                        vote.getTimeslots().stream()
-                                .map(TimeSlot::getDatetime)
-                                .sorted()
-                                .collect(Collectors.toList()),
-                        vote.getPreferredTimeSlot() != null ? vote.getPreferredTimeSlot().getDatetime() : null
-                ))
-                .collect(Collectors.toList());
-
-        // Calculate statistics for each timeslot
-        List<TimeSlotStatsDTO> timeSlotStats = currentWeek.getTimeSlots().stream()
-                .map(timeSlot -> {
-                    Long voteCount = timeSlotRepository.countVotesByTimeSlotId(timeSlot.getId());
-                    Long preferredCount = timeSlotRepository.countPreferredVotesByTimeSlotId(timeSlot.getId());
-                    // Weighted vote = regular votes + preferred votes (preferred counts double = 1 regular + 1 extra)
-                    int weightedCount = voteCount.intValue() + preferredCount.intValue();
-                    return new TimeSlotStatsDTO(
-                            timeSlot.getId(),
-                            timeSlot.getDatetime(),
-                            voteCount.intValue(),
-                            preferredCount.intValue(),
-                            weightedCount,
-                            false // Will be set later for winner
-                    );
-                })
-                .sorted(Comparator.comparing(TimeSlotStatsDTO::getDatetime))
-                .collect(Collectors.toList());
-
-        // Determine winner based on weighted vote count (preferred timeslot with most votes wins)
-        TimeSlotStatsDTO winner = timeSlotStats.stream()
-                .max(Comparator.comparing(TimeSlotStatsDTO::getWeightedVoteCount))
-                .orElse(null);
-
-        if (winner != null) {
-            winner.setWinner(true);
-        }
-
-        WeekResultDTO result = new WeekResultDTO();
-        result.setWeekId(currentWeek.getId());
-        result.setDeadline(currentWeek.getDeadline());
         result.setTimeSlots(timeSlotStats);
         result.setVotes(voteResults);
         result.setWinnerTimeSlot(winner);
@@ -240,21 +197,17 @@ public class VotingService {
         // Start from Monday after the deadline
         LocalDate startDate = deadline.plusDays(1); // Monday after Sunday deadline
 
-        // Common D&D session times (you can customize these)
-        List<LocalTime> sessionTimes = Arrays.asList(
-                LocalTime.of(18, 0),  // 6 PM
-                LocalTime.of(19, 0),  // 7 PM
-                LocalTime.of(20, 0)   // 8 PM
-        );
-
         // Generate slots for 7 days (Monday to Sunday)
         for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
             LocalDate date = startDate.plusDays(dayOffset);
+            DayOfWeek dayOfWeek = date.getDayOfWeek();
 
-            for (LocalTime time : sessionTimes) {
-                LocalDateTime slotDateTime = LocalDateTime.of(date, time);
-                TimeSlot timeSlot = new TimeSlot(slotDateTime, votingWeek);
-                timeSlots.add(timeSlot);
+            // All days get 18:00 slot
+            timeSlots.add(new TimeSlot(LocalDateTime.of(date, LocalTime.of(18, 0)), votingWeek));
+
+            // Saturday and Sunday also get 10:00 slot
+            if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
+                timeSlots.add(new TimeSlot(LocalDateTime.of(date, LocalTime.of(10, 0)), votingWeek));
             }
         }
 
