@@ -15,6 +15,6 @@ public class WeekResultDTO {
     private LocalDate deadline;
     private List<TimeSlotStatsDTO> timeSlots;
     private List<VoteResultDTO> votes;
-    private TimeSlotStatsDTO winnerTimeSlot;
+    private List<TimeSlotStatsDTO> winnerTimeSlots;
 }
 

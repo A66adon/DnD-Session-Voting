@@ -97,21 +97,23 @@ public class VotingService {
                 .sorted(Comparator.comparing(TimeSlotStatsDTO::getDatetime))
                 .collect(Collectors.toList());
 
-        // Determine winner based on weighted vote count (preferred timeslot with most votes wins)
-        TimeSlotStatsDTO winner = timeSlotStats.stream()
-                .max(Comparator.comparing(TimeSlotStatsDTO::getWeightedVoteCount))
-                .orElse(null);
+        // Determine winners based on weighted vote count (all timeslots with max votes win)
+        int maxWeightedVotes = timeSlotStats.stream()
+                .mapToInt(TimeSlotStatsDTO::getWeightedVoteCount)
+                .max()
+                .orElse(0);
 
-        if (winner != null) {
-            winner.setWinner(true);
-        }
+        List<TimeSlotStatsDTO> winners = timeSlotStats.stream()
+                .filter(ts -> ts.getWeightedVoteCount() == maxWeightedVotes && maxWeightedVotes > 0)
+                .peek(ts -> ts.setWinner(true))
+                .collect(Collectors.toList());
 
         WeekResultDTO result = new WeekResultDTO();
         result.setWeekId(week.getId());
         result.setDeadline(week.getDeadline());
         result.setTimeSlots(timeSlotStats);
         result.setVotes(voteResults);
-        result.setWinnerTimeSlot(winner);
+        result.setWinnerTimeSlots(winners);
 
         return result;
     }
