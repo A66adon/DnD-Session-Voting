@@ -71,7 +71,8 @@ public class SVController {
 
         Vote vote = votingService.submitVote(
                 username,
-                voteRequest.getTimeSlotIds()
+                voteRequest.getTimeSlotIds(),
+                voteRequest.getPreferredTimeSlotId()
         );
         return ResponseEntity.ok(vote);
     }
