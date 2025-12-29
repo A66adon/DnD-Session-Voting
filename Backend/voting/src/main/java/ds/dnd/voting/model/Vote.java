@@ -1,5 +1,6 @@
 package ds.dnd.voting.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,6 +28,7 @@ public class Vote {
             joinColumns = @JoinColumn(name = "vote_id"),
             inverseJoinColumns = @JoinColumn(name = "timeslot_id")
     )
+    @JsonIgnoreProperties({"votingWeek"})
     private List<TimeSlot> timeslots;
 
     public Vote(String voterName, List<TimeSlot> timeslots) {

@@ -1,5 +1,6 @@
 package ds.dnd.voting.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,6 +22,7 @@ public class TimeSlot {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "voting_week_id")
+    @JsonIgnore
     private VotingWeek votingWeek;
 
     public TimeSlot(LocalDateTime datetime, VotingWeek votingWeek) {
