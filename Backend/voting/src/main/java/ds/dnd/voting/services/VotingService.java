@@ -57,7 +57,8 @@ public class VotingService {
                         vote.getTimeslots().stream()
                                 .map(TimeSlot::getDatetime)
                                 .sorted()
-                                .collect(Collectors.toList())
+                                .collect(Collectors.toList()),
+                        vote.getPreferredTimeSlot() != null ? vote.getPreferredTimeSlot().getDatetime() : null
                 ))
                 .collect(Collectors.toList());
 
@@ -65,19 +66,24 @@ public class VotingService {
         List<TimeSlotStatsDTO> timeSlotStats = week.getTimeSlots().stream()
                 .map(timeSlot -> {
                     Long voteCount = timeSlotRepository.countVotesByTimeSlotId(timeSlot.getId());
+                    Long preferredCount = timeSlotRepository.countPreferredVotesByTimeSlotId(timeSlot.getId());
+                    // Weighted vote = regular votes + preferred votes (preferred counts double = 1 regular + 1 extra)
+                    int weightedCount = voteCount.intValue() + preferredCount.intValue();
                     return new TimeSlotStatsDTO(
                             timeSlot.getId(),
                             timeSlot.getDatetime(),
                             voteCount.intValue(),
+                            preferredCount.intValue(),
+                            weightedCount,
                             false // Will be set later for winner
                     );
                 })
                 .sorted(Comparator.comparing(TimeSlotStatsDTO::getDatetime))
                 .collect(Collectors.toList());
 
-        // Determine winner (timeslot with most votes)
+        // Determine winner based on weighted vote count (preferred timeslot with most votes wins)
         TimeSlotStatsDTO winner = timeSlotStats.stream()
-                .max(Comparator.comparing(TimeSlotStatsDTO::getVoteCount))
+                .max(Comparator.comparing(TimeSlotStatsDTO::getWeightedVoteCount))
                 .orElse(null);
 
         if (winner != null) {
@@ -110,7 +116,8 @@ public class VotingService {
                         vote.getTimeslots().stream()
                                 .map(TimeSlot::getDatetime)
                                 .sorted()
-                                .collect(Collectors.toList())
+                                .collect(Collectors.toList()),
+                        vote.getPreferredTimeSlot() != null ? vote.getPreferredTimeSlot().getDatetime() : null
                 ))
                 .collect(Collectors.toList());
 
@@ -118,19 +125,24 @@ public class VotingService {
         List<TimeSlotStatsDTO> timeSlotStats = currentWeek.getTimeSlots().stream()
                 .map(timeSlot -> {
                     Long voteCount = timeSlotRepository.countVotesByTimeSlotId(timeSlot.getId());
+                    Long preferredCount = timeSlotRepository.countPreferredVotesByTimeSlotId(timeSlot.getId());
+                    // Weighted vote = regular votes + preferred votes (preferred counts double = 1 regular + 1 extra)
+                    int weightedCount = voteCount.intValue() + preferredCount.intValue();
                     return new TimeSlotStatsDTO(
                             timeSlot.getId(),
                             timeSlot.getDatetime(),
                             voteCount.intValue(),
+                            preferredCount.intValue(),
+                            weightedCount,
                             false // Will be set later for winner
                     );
                 })
                 .sorted(Comparator.comparing(TimeSlotStatsDTO::getDatetime))
                 .collect(Collectors.toList());
 
-        // Determine winner (timeslot with most votes)
+        // Determine winner based on weighted vote count (preferred timeslot with most votes wins)
         TimeSlotStatsDTO winner = timeSlotStats.stream()
-                .max(Comparator.comparing(TimeSlotStatsDTO::getVoteCount))
+                .max(Comparator.comparing(TimeSlotStatsDTO::getWeightedVoteCount))
                 .orElse(null);
 
         if (winner != null) {
@@ -256,7 +268,7 @@ public class VotingService {
      * If the user has already voted, the existing vote will be updated
      */
     @Transactional
-    public Vote submitVote(String voterName, List<Long> timeSlotIds) {
+    public Vote submitVote(String voterName, List<Long> timeSlotIds, Long preferredTimeSlotId) {
         VotingWeek currentWeek = getCurrentWeek();
 
         // Verify all timeslots belong to current week
@@ -269,6 +281,17 @@ public class VotingService {
             throw new RuntimeException("Some timeslots do not belong to the current voting week");
         }
 
+        // Handle preferred timeslot
+        TimeSlot preferredTimeSlot = null;
+        if (preferredTimeSlotId != null) {
+            // Verify preferred timeslot is one of the selected timeslots
+            if (!timeSlotIds.contains(preferredTimeSlotId)) {
+                throw new RuntimeException("Preferred timeslot must be one of the selected timeslots");
+            }
+            preferredTimeSlot = timeSlotRepository.findById(preferredTimeSlotId)
+                    .orElseThrow(() -> new RuntimeException("Preferred timeslot not found"));
+        }
+
         // Check if user has already voted for this week
         Optional<Vote> existingVote = voteRepository.findByVoterNameAndVotingWeek(voterName, currentWeek.getId());
 
@@ -278,11 +301,12 @@ public class VotingService {
             vote = existingVote.get();
             vote.getTimeslots().clear();
             vote.getTimeslots().addAll(timeSlots);
-            log.info("Updated vote for {} with {} timeslots", voterName, timeSlotIds.size());
+            vote.setPreferredTimeSlot(preferredTimeSlot);
+            log.info("Updated vote for {} with {} timeslots, preferred: {}", voterName, timeSlotIds.size(), preferredTimeSlotId);
         } else {
             // Create new vote
-            vote = new Vote(voterName, timeSlots);
-            log.info("Created new vote for {} with {} timeslots", voterName, timeSlotIds.size());
+            vote = new Vote(voterName, timeSlots, preferredTimeSlot);
+            log.info("Created new vote for {} with {} timeslots, preferred: {}", voterName, timeSlotIds.size(), preferredTimeSlotId);
         }
 
         return voteRepository.save(vote);
