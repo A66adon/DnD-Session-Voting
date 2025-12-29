@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/week_result.dart';
+import '../models/voting_week.dart';
 import '../models/time_slot.dart';
 import '../services/auth_service.dart';
 import '../services/voting_service.dart';
@@ -16,8 +16,9 @@ class _VotingScreenState extends State<VotingScreen> {
   final VotingService _votingService = VotingService();
   final AuthService _authService = AuthService();
 
-  WeekResult? _currentWeek;
+  VotingWeek? _currentWeek;
   final Set<int> _selectedSlots = {};
+  int? _preferredSlotId;
   bool _isLoading = true;
   bool _isSubmitting = false;
   String? _errorMessage;
@@ -36,8 +37,8 @@ class _VotingScreenState extends State<VotingScreen> {
     });
 
     try {
-      // Use current-results endpoint which has proper JSON structure
-      final week = await _votingService.getCurrentResults();
+      // Use current-week endpoint to get available time slots for voting
+      final week = await _votingService.getCurrentWeek();
       setState(() {
         _currentWeek = week;
         _isLoading = false;
@@ -72,7 +73,10 @@ class _VotingScreenState extends State<VotingScreen> {
     });
 
     try {
-      await _votingService.submitVote(_selectedSlots.toList());
+      await _votingService.submitVote(
+        _selectedSlots.toList(),
+        preferredTimeSlotId: _preferredSlotId,
+      );
       setState(() {
         _successMessage = 'Vote submitted successfully!';
         _isSubmitting = false;
@@ -91,9 +95,20 @@ class _VotingScreenState extends State<VotingScreen> {
     setState(() {
       if (_selectedSlots.contains(slotId)) {
         _selectedSlots.remove(slotId);
+        // If we removed the preferred slot, clear it
+        if (_preferredSlotId == slotId) {
+          _preferredSlotId = null;
+        }
       } else {
         _selectedSlots.add(slotId);
       }
+      _successMessage = null;
+    });
+  }
+
+  void _setPreferredSlot(int slotId) {
+    setState(() {
+      _preferredSlotId = slotId;
       _successMessage = null;
     });
   }
@@ -145,7 +160,7 @@ class _VotingScreenState extends State<VotingScreen> {
     }
 
     // Group timeslots by date
-    final slotsByDate = <DateTime, List<TimeSlotResult>>{};
+    final slotsByDate = <DateTime, List<TimeSlot>>{};
     for (final slot in _currentWeek!.timeSlots) {
       final date = DateTime(
         slot.datetime.year,
@@ -164,7 +179,7 @@ class _VotingScreenState extends State<VotingScreen> {
           child: Column(
             children: [
               Text(
-                'Week ${_currentWeek!.weekId}',
+                'Week ${_currentWeek!.id}',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               Text(
@@ -214,12 +229,29 @@ class _VotingScreenState extends State<VotingScreen> {
                     ),
                     const Divider(height: 1),
                     ...slots.map(
-                      (slot) => CheckboxListTile(
+                      (slot) => ListTile(
+                        leading: Checkbox(
+                          value: _selectedSlots.contains(slot.id),
+                          onChanged: _authService.isLoggedIn
+                              ? (_) => _toggleSlot(slot.id)
+                              : null,
+                        ),
                         title: Text(DateFormat('HH:mm').format(slot.datetime)),
-                        subtitle: Text('${slot.voteCount} votes'),
-                        value: _selectedSlots.contains(slot.timeSlotId),
-                        onChanged: _authService.isLoggedIn
-                            ? (_) => _toggleSlot(slot.timeSlotId)
+                        trailing: _selectedSlots.contains(slot.id)
+                            ? IconButton(
+                                icon: Icon(
+                                  _preferredSlotId == slot.id
+                                      ? Icons.star
+                                      : Icons.star_border,
+                                  color: _preferredSlotId == slot.id
+                                      ? Colors.amber
+                                      : null,
+                                ),
+                                onPressed: _authService.isLoggedIn
+                                    ? () => _setPreferredSlot(slot.id)
+                                    : null,
+                                tooltip: 'Set as preferred',
+                              )
                             : null,
                       ),
                     ),
@@ -267,7 +299,7 @@ class _VotingScreenState extends State<VotingScreen> {
                   : Text(
                       _selectedSlots.isEmpty
                           ? 'Select time slots'
-                          : 'Submit Vote (${_selectedSlots.length} selected)',
+                          : 'Submit Vote (${_selectedSlots.length} selected${_preferredSlotId != null ? ', 1 preferred' : ''})',
                     ),
             ),
           ),

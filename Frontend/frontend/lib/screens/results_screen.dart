@@ -108,6 +108,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     Text(
                       'Deadline: ${DateFormat('EEEE, dd.MM.yyyy').format(_results!.deadline)}',
                     ),
+                    Text(
+                      'Total voters: ${_results!.votes.length}',
+                    ),
                   ],
                 ),
               ),
@@ -116,7 +119,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
             const SizedBox(height: 16),
 
             // Winner
-            if (_results!.winnerTimeSlot != null)
+            if (_results!.hasWinner)
               Card(
                 color: Colors.green.shade50,
                 child: Padding(
@@ -133,23 +136,20 @@ class _ResultsScreenState extends State<ResultsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Winner',
-                              style: TextStyle(
+                            Text(
+                              _results!.winnerTimeSlots.length > 1 ? 'Winners (Tie)' : 'Winner',
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                               ),
                             ),
-                            Text(
-                              DateFormat(
-                                'EEEE, dd.MM.yyyy HH:mm',
-                              ).format(_results!.winnerTimeSlot!.datetime),
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                            Text(
-                              '${_results!.winnerTimeSlot!.voteCount} votes',
-                              style: TextStyle(color: Colors.grey.shade600),
-                            ),
+                            ..._results!.winnerTimeSlots.map((slot) => Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                '${DateFormat('EEEE, dd.MM. HH:mm').format(slot.datetime)} - ${slot.voteCount} votes (${slot.preferredVoteCount} preferred)',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            )),
                           ],
                         ),
                       ),
@@ -170,74 +170,44 @@ class _ResultsScreenState extends State<ResultsScreen> {
             ...(_results!.timeSlots.toList()
                   ..sort((a, b) => b.voteCount.compareTo(a.voteCount)))
                 .map(
-                  (slot) => Card(
-                    color: slot.winner ? Colors.green.shade50 : null,
-                    child: ListTile(
-                      leading: slot.winner
-                          ? const Icon(Icons.star, color: Colors.amber)
-                          : const Icon(Icons.access_time),
-                      title: Text(
-                        DateFormat('EEEE, dd.MM. HH:mm').format(slot.datetime),
-                      ),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                  (slot) {
+                    final isWinner = _results!.winnerTimeSlots
+                        .any((w) => w.timeSlotId == slot.timeSlotId);
+                    return Card(
+                      color: isWinner ? Colors.green.shade50 : null,
+                      child: ListTile(
+                        leading: isWinner
+                            ? const Icon(Icons.star, color: Colors.amber)
+                            : const Icon(Icons.access_time),
+                        title: Text(DateFormat('EEEE, dd.MM. HH:mm').format(slot.datetime)),
+                        subtitle: Text(
+                          '${slot.preferredVoteCount} preferred',
                         ),
-                        decoration: BoxDecoration(
-                          color: slot.winner
-                              ? Colors.green
-                              : Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${slot.voteCount}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: slot.winner ? Colors.white : Colors.black,
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
                           ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-            const SizedBox(height: 24),
-
-            // Voters
-            Text('Votes', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-
-            if (_results!.votes.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('No votes yet'),
-                ),
-              )
-            else
-              ..._results!.votes.map(
-                (voter) => Card(
-                  child: ExpansionTile(
-                    leading: const Icon(Icons.person),
-                    title: Text(voter.voterName),
-                    subtitle: Text('${voter.votedTimeslots.length} votes'),
-                    children: voter.votedTimeslots
-                        .map(
-                          (dt) => ListTile(
-                            leading: const Icon(
-                              Icons.check,
-                              color: Colors.green,
-                            ),
-                            title: Text(
-                              DateFormat('EEEE, dd.MM. HH:mm').format(dt),
+                          decoration: BoxDecoration(
+                            color: isWinner
+                                ? Colors.green
+                                : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${slot.voteCount}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isWinner ? Colors.white : Colors.black,
                             ),
                           ),
-                        )
-                        .toList(),
-                  ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ),
+
+            const SizedBox(height: 16),
           ],
         ),
       ),

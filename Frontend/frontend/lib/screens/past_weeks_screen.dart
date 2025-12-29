@@ -83,9 +83,13 @@ class _PastWeeksScreenState extends State<PastWeeksScreen> {
             'Deadline: ${DateFormat('dd.MM.yyyy').format(week.deadline)}',
             textAlign: TextAlign.center,
           ),
+          Text(
+            'Total voters: ${week.votes.length}',
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 24),
           
-          if (week.winnerTimeSlot != null) ...[
+          if (week.hasWinner) ...[
             Card(
               color: Colors.green.shade50,
               child: Padding(
@@ -98,16 +102,16 @@ class _PastWeeksScreenState extends State<PastWeeksScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Winner',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
                           Text(
-                            DateFormat('EEEE, dd.MM.yyyy HH:mm').format(
-                              week.winnerTimeSlot!.datetime,
-                            ),
+                            week.winnerTimeSlots.length > 1 ? 'Winners (Tie)' : 'Winner',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          Text('${week.winnerTimeSlot!.voteCount} votes'),
+                          ...week.winnerTimeSlots.map((slot) => Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '${DateFormat('EEEE, dd.MM. HH:mm').format(slot.datetime)} - ${slot.voteCount} votes',
+                            ),
+                          )),
                         ],
                       ),
                     ),
@@ -119,25 +123,30 @@ class _PastWeeksScreenState extends State<PastWeeksScreen> {
           ],
           
           const Text(
-            'All Votes:',
+            'All Time Slots:',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 8),
           
-          if (week.votes.isEmpty)
-            const Text('No votes')
+          if (week.timeSlots.isEmpty)
+            const Text('No time slots')
           else
-            ...week.votes.map((voter) => Card(
-              child: ListTile(
-                leading: const Icon(Icons.person),
-                title: Text(voter.voterName),
-                subtitle: Text(
-                  voter.votedTimeslots
-                      .map((dt) => DateFormat('dd.MM. HH:mm').format(dt))
-                      .join(', '),
+            ...week.timeSlots.map((slot) {
+              final isWinner = week.winnerTimeSlots
+                  .any((w) => w.timeSlotId == slot.timeSlotId);
+              return Card(
+                color: isWinner ? Colors.green.shade50 : null,
+                child: ListTile(
+                  leading: isWinner
+                      ? const Icon(Icons.star, color: Colors.amber)
+                      : const Icon(Icons.access_time),
+                  title: Text(DateFormat('EEEE, dd.MM. HH:mm').format(slot.datetime)),
+                  trailing: Text(
+                    '${slot.voteCount} votes (${slot.preferredVoteCount} preferred)',
+                  ),
                 ),
-              ),
-            )),
+              );
+            }),
         ],
       ),
     );
@@ -214,16 +223,14 @@ class _PastWeeksScreenState extends State<PastWeeksScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Deadline: ${DateFormat('dd.MM.yyyy').format(week.deadline)}'),
-                  if (week.winnerTimeSlot != null)
+                  if (week.hasWinner)
                     Row(
                       children: [
                         const Icon(Icons.emoji_events, size: 16, color: Colors.amber),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            DateFormat('EEEE, dd.MM. HH:mm').format(
-                              week.winnerTimeSlot!.datetime,
-                            ),
+                            DateFormat('EEEE, dd.MM. HH:mm').format(week.primaryWinner!.datetime),
                             style: const TextStyle(color: Colors.green),
                           ),
                         ),
