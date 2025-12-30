@@ -36,7 +36,7 @@ public class VotingService {
      * Get the current active voting week
      */
     public VotingWeek getCurrentWeek() {
-        return votingWeekRepository.findCurrentWeek(LocalDate.now())
+        return votingWeekRepository.findByActiveTrue()
                 .orElseGet(this::createNewWeek);
     }
 
@@ -76,37 +76,57 @@ public class VotingService {
                                 .collect(Collectors.toList()),
                         vote.getPreferredTimeSlot() != null ? vote.getPreferredTimeSlot().getDatetime() : null
                 ))
-                .collect(Collectors.toList());
+                .toList();
 
         // Calculate statistics for each timeslot
         List<TimeSlotStatsDTO> timeSlotStats = week.getTimeSlots().stream()
                 .map(timeSlot -> {
-                    Long voteCount = timeSlotRepository.countVotesByTimeSlotId(timeSlot.getId());
-                    Long preferredCount = timeSlotRepository.countPreferredVotesByTimeSlotId(timeSlot.getId());
-                    // Weighted vote = regular votes + preferred votes (preferred counts double = 1 regular + 1 extra)
-                    int weightedCount = voteCount.intValue() + preferredCount.intValue();
+                    int voteCount = timeSlotRepository
+                            .countVotesByTimeSlotId(timeSlot.getId())
+                            .intValue();
+
+                    int preferredCount = timeSlotRepository
+                            .countPreferredVotesByTimeSlotId(timeSlot.getId())
+                            .intValue();
+
                     return new TimeSlotStatsDTO(
                             timeSlot.getId(),
                             timeSlot.getDatetime(),
-                            voteCount.intValue(),
-                            preferredCount.intValue(),
-                            weightedCount,
-                            false // Will be set later for winner
+                            voteCount,
+                            preferredCount,
+                            false
                     );
                 })
                 .sorted(Comparator.comparing(TimeSlotStatsDTO::getDatetime))
-                .collect(Collectors.toList());
+                .toList();
 
         // Determine winners based on weighted vote count (all timeslots with max votes win)
-        int maxWeightedVotes = timeSlotStats.stream()
-                .mapToInt(TimeSlotStatsDTO::getWeightedVoteCount)
+        int maxVotes = timeSlotStats.stream()
+                .mapToInt(TimeSlotStatsDTO::getVoteCount)
                 .max()
                 .orElse(0);
 
-        List<TimeSlotStatsDTO> winners = timeSlotStats.stream()
-                .filter(ts -> ts.getWeightedVoteCount() == maxWeightedVotes && maxWeightedVotes > 0)
-                .peek(ts -> ts.setWinner(true))
+        List<TimeSlotStatsDTO> topByVotes = timeSlotStats.stream()
+                .filter(ts -> ts.getVoteCount() == maxVotes && maxVotes > 0)
                 .collect(Collectors.toList());
+
+        List<TimeSlotStatsDTO> winners;
+
+        if (topByVotes.size() == 1) {
+            winners = topByVotes;
+        } else {
+            // 3️⃣ Tie-Breaker: Preferred Votes
+            int maxPreferred = topByVotes.stream()
+                    .mapToInt(TimeSlotStatsDTO::getPreferredVoteCount)
+                    .max()
+                    .orElse(0);
+
+            winners = topByVotes.stream()
+                    .filter(ts -> ts.getPreferredVoteCount() == maxPreferred)
+                    .collect(Collectors.toList());
+        }
+
+        winners.forEach(ts -> ts.setWinner(true));
 
         WeekResultDTO result = new WeekResultDTO();
         result.setWeekId(week.getId());
@@ -168,12 +188,16 @@ public class VotingService {
     protected VotingWeek createNewWeek() {
         LocalDate today = LocalDate.now();
 
+        // Deactivate existing active weeks
+        votingWeekRepository.deactivateAll();
+
         // Calculate deadline: next Sunday
         LocalDate nextSunday = today.with(TemporalAdjusters.next(DayOfWeek.SUNDAY));
 
         // Create new voting week
         VotingWeek newWeek = new VotingWeek();
         newWeek.setDeadline(nextSunday);
+        newWeek.setActive(true);
         newWeek.setTimeSlots(new ArrayList<>());
 
         VotingWeek savedWeek = votingWeekRepository.save(newWeek);
