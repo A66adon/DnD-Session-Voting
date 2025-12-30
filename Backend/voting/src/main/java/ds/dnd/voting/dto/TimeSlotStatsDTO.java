@@ -14,7 +14,6 @@ public class TimeSlotStatsDTO {
     private LocalDateTime datetime;
     private Integer voteCount;
     private Integer preferredVoteCount;
-    private Integer weightedVoteCount; // voteCount + preferredVoteCount (preferred counts double)
     private boolean isWinner;
 }
 

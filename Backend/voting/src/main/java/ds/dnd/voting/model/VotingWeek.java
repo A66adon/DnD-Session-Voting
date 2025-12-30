@@ -28,6 +28,9 @@ public class VotingWeek {
     )
     private List<TimeSlot> timeSlots;
 
+    @Column(nullable = false)
+    private boolean active;
+
     public VotingWeek(LocalDate deadline, List<TimeSlot> timeSlots) {
         this.deadline = deadline;
         this.timeSlots = new ArrayList<>();
