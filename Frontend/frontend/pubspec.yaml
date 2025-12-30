@@ -43,6 +43,9 @@ dependencies:
   
   # Date formatting
   intl: ^0.19.0
+  
+  # SVG support for images
+  flutter_svg: ^2.0.10
 
 dev_dependencies:
   flutter_test:
@@ -65,6 +68,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Assets
+  assets:
+    - assets/images/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
