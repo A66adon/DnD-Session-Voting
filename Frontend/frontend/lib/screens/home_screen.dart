@@ -389,20 +389,124 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.deepPurple.shade900,
-              Colors.black,
-              Colors.deepPurple.shade900.withOpacity(0.8),
-            ],
-            stops: const [0.0, 0.5, 1.0],
+      body: Stack(
+        children: [
+          // Base gradient layer
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF1a0a2e), // Deep purple-black
+                  Color(0xFF0d0d1a), // Almost black with hint of blue
+                  Color(0xFF16213e), // Dark blue
+                  Color(0xFF1a0a2e), // Deep purple-black
+                ],
+                stops: [0.0, 0.35, 0.65, 1.0],
+              ),
+            ),
           ),
-        ),
-        child: _buildBody(horizontalPadding),
+          // Large ambient glow - top left
+          Positioned(
+            top: -150,
+            left: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.deepPurple.withValues(alpha: 0.25),
+                    Colors.deepPurple.withValues(alpha: 0.1),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.4, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Large ambient glow - bottom right
+          Positioned(
+            bottom: -200,
+            right: -150,
+            child: Container(
+              width: 500,
+              height: 500,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.indigo.withValues(alpha: 0.2),
+                    Colors.purple.withValues(alpha: 0.1),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.4, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Mid-screen accent glow
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.4,
+            right: -80,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.purple.shade900.withValues(alpha: 0.3),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Left side mid glow
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.55,
+            left: -120,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.deepPurple.shade800.withValues(alpha: 0.2),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Subtle top center glow
+          Positioned(
+            top: -50,
+            left: MediaQuery.of(context).size.width * 0.3,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.4,
+              height: 200,
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.topCenter,
+                  radius: 1.0,
+                  colors: [
+                    Colors.deepPurple.withValues(alpha: 0.15),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Decorative stars/magic particles
+          ..._buildStarField(context),
+          // Main content
+          _buildBody(horizontalPadding),
+        ],
       ),
     );
   }
@@ -413,6 +517,75 @@ class _HomeScreenState extends State<HomeScreen> {
       return true;
     if (_preferredSlotId != _originalPreferredSlotId) return true;
     return false;
+  }
+
+  List<Widget> _buildStarField(BuildContext context) {
+    // Pre-defined star positions for consistent, performant rendering
+    const starData = [
+      // (xPercent, yPercent, size, opacity, hasGlow)
+      (0.05, 0.08, 2.0, 0.7, true),
+      (0.92, 0.05, 1.5, 0.5, false),
+      (0.15, 0.18, 1.0, 0.4, false),
+      (0.88, 0.15, 2.5, 0.8, true),
+      (0.03, 0.32, 1.5, 0.5, false),
+      (0.95, 0.28, 2.0, 0.6, true),
+      (0.08, 0.45, 1.0, 0.3, false),
+      (0.90, 0.42, 1.5, 0.5, false),
+      (0.12, 0.58, 2.0, 0.6, true),
+      (0.94, 0.55, 1.0, 0.4, false),
+      (0.06, 0.72, 1.5, 0.5, false),
+      (0.88, 0.68, 2.5, 0.7, true),
+      (0.15, 0.85, 2.0, 0.6, true),
+      (0.92, 0.82, 1.0, 0.4, false),
+      (0.04, 0.92, 1.5, 0.5, false),
+      (0.96, 0.95, 2.0, 0.6, true),
+      // Extra stars for more magic feel
+      (0.25, 0.12, 1.0, 0.35, false),
+      (0.75, 0.10, 1.5, 0.45, false),
+      (0.35, 0.25, 0.8, 0.3, false),
+      (0.65, 0.22, 1.2, 0.4, false),
+      (0.45, 0.35, 1.0, 0.35, false),
+      (0.55, 0.48, 0.8, 0.3, false),
+      (0.28, 0.62, 1.0, 0.35, false),
+      (0.72, 0.58, 1.2, 0.4, false),
+      (0.38, 0.78, 0.8, 0.3, false),
+      (0.62, 0.75, 1.0, 0.35, false),
+      (0.48, 0.88, 1.2, 0.4, false),
+      (0.22, 0.95, 0.8, 0.3, false),
+      (0.78, 0.92, 1.0, 0.35, false),
+    ];
+
+    final size = MediaQuery.of(context).size;
+
+    return starData.map((star) {
+      final (xPct, yPct, starSize, opacity, hasGlow) = star;
+      return Positioned(
+        left: size.width * xPct,
+        top: size.height * yPct,
+        child: Container(
+          width: starSize,
+          height: starSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: opacity),
+            boxShadow: hasGlow
+                ? [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: opacity * 0.6),
+                      blurRadius: 6,
+                      spreadRadius: 2,
+                    ),
+                    BoxShadow(
+                      color: Colors.purple.withValues(alpha: opacity * 0.3),
+                      blurRadius: 10,
+                      spreadRadius: 3,
+                    ),
+                  ]
+                : null,
+          ),
+        ),
+      );
+    }).toList();
   }
 
   Widget _buildBody(double horizontalPadding) {
@@ -531,27 +704,64 @@ class _HomeScreenState extends State<HomeScreen> {
             child: SizedBox(
               width: double.infinity,
               height: 56,
-              child: ElevatedButton.icon(
-                onPressed: _isSubmitting ? null : _submitVote,
-                icon: _isSubmitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.how_to_vote, size: 28),
-                label: Text(
-                  _isSubmitting ? 'Submitting...' : 'Submit Vote',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  onTap: _isSubmitting ? null : _submitVote,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.deepPurple.shade600,
+                          Colors.deepPurple.shade800,
+                          Colors.indigo.shade800,
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.deepPurple.withValues(alpha: 0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: Colors.deepPurple.shade300,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _isSubmitting
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.how_to_vote,
+                                size: 28,
+                                color: Colors.white,
+                              ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _isSubmitting ? 'Submitting...' : 'Submit Vote',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -565,6 +775,18 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTimeSlotCard(TimeSlot slot, DateTime date) {
     final isSelected = _selectedSlots.contains(slot.id);
     final isPreferred = _preferredSlotId == slot.id;
+
+    // Check if this slot is a winner
+    final isWinner =
+        _weekResult?.winnerTimeSlots.any(
+          (w) =>
+              w.datetime.year == slot.datetime.year &&
+              w.datetime.month == slot.datetime.month &&
+              w.datetime.day == slot.datetime.day &&
+              w.datetime.hour == slot.datetime.hour &&
+              w.datetime.minute == slot.datetime.minute,
+        ) ??
+        false;
 
     // Get voters for this timeslot
     final voters =
@@ -583,19 +805,29 @@ class _HomeScreenState extends State<HomeScreen> {
         [];
 
     // Determine card styling based on selection
-    final cardColor = isSelected
-        ? Colors.deepPurple.shade700
-        : Colors.deepPurple.shade900.withOpacity(0.5);
     final borderColor = isPreferred
         ? Colors.amber
         : isSelected
         ? Colors.deepPurple.shade300
         : Colors.deepPurple.shade800;
 
+    // Card gradient colors for more interesting look
+    final gradientColors = isSelected
+        ? [
+            Colors.deepPurple.shade700.withValues(alpha: 0.85),
+            Colors.deepPurple.shade800.withValues(alpha: 0.7),
+            Colors.indigo.shade900.withValues(alpha: 0.6),
+          ]
+        : [
+            Colors.deepPurple.shade900.withValues(alpha: 0.5),
+            const Color(0xFF1a0a2e).withValues(alpha: 0.6),
+            Colors.indigo.shade900.withValues(alpha: 0.4),
+          ];
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: cardColor,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: _authService.isLoggedIn && _isViewingCurrentWeek
@@ -611,15 +843,39 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: borderColor, width: 2),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: gradientColors,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: Colors.deepPurple.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
             child: Row(
               children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Icon(
+                    isWinner ? Icons.emoji_events : Icons.emoji_events_outlined,
+                    color: isWinner
+                        ? Colors.amber.shade300
+                        : Colors.grey.shade600,
+                    size: 28,
+                  ),
+                ),
                 Expanded(
                   child: Text(
                     DateFormat('EEEE, dd.MM.yyyy').format(date),
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: isWinner ? FontWeight.bold : FontWeight.w500,
                       color: isSelected ? Colors.white : Colors.white70,
                     ),
                   ),

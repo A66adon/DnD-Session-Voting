@@ -60,19 +60,128 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background pattern - using a simple dark gradient instead of many SVGs for performance
+          // Fancy layered background
           Container(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment.center,
-                radius: 1.2,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
                 colors: [
-                  Colors.grey.shade900,
-                  Colors.black,
+                  Color(0xFF1a0a2e), // Deep purple-black
+                  Color(0xFF16213e), // Dark blue
+                  Color(0xFF0f0f23), // Almost black
                 ],
+                stops: [0.0, 0.5, 1.0],
               ),
             ),
           ),
+          // Radial glow from center top
+          Positioned(
+            top: -100,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 500,
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.topCenter,
+                  radius: 0.8,
+                  colors: [
+                    Colors.deepPurple.withOpacity(0.3),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Bottom corner glow
+          Positioned(
+            bottom: -150,
+            right: -150,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.purple.withOpacity(0.15),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Left corner glow
+          Positioned(
+            bottom: -100,
+            left: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.indigo.withOpacity(0.1),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Subtle top-right accent
+          Positioned(
+            top: 50,
+            right: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.deepPurple.shade900.withOpacity(0.4),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Decorative stars/sparkles effect using positioned dots
+          ...List.generate(15, (index) {
+            final positions = [
+              const Offset(0.1, 0.15), const Offset(0.85, 0.1),
+              const Offset(0.9, 0.3), const Offset(0.05, 0.4),
+              const Offset(0.15, 0.7), const Offset(0.92, 0.55),
+              const Offset(0.8, 0.75), const Offset(0.25, 0.85),
+              const Offset(0.6, 0.08), const Offset(0.35, 0.12),
+              const Offset(0.95, 0.88), const Offset(0.08, 0.92),
+              const Offset(0.5, 0.95), const Offset(0.75, 0.05),
+              const Offset(0.02, 0.25),
+            ];
+            final sizes = [2.0, 1.5, 2.5, 1.0, 2.0, 1.5, 2.0, 1.0, 1.5, 2.0, 1.5, 2.0, 1.0, 2.5, 1.5];
+            final opacities = [0.6, 0.4, 0.7, 0.3, 0.5, 0.4, 0.6, 0.3, 0.5, 0.4, 0.6, 0.5, 0.3, 0.7, 0.4];
+            return Positioned(
+              left: MediaQuery.of(context).size.width * positions[index].dx,
+              top: MediaQuery.of(context).size.height * positions[index].dy,
+              child: Container(
+                width: sizes[index],
+                height: sizes[index],
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(opacities[index]),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(opacities[index] * 0.5),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
           // Main content
           Center(
             child: SingleChildScrollView(
