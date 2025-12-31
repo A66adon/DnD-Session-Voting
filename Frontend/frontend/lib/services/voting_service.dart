@@ -51,7 +51,7 @@ class VotingService {
       final data = jsonDecode(response.body);
       return WeekResult.fromJson(data);
     } else {
-      throw Exception('Failed to load week results: ${response.statusCode}');
+      throw Exception('No Week found');
     }
   }
   
