@@ -616,38 +616,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Column(
       children: [
-        // Show "Viewing History" banner when not on current week
-        if (!_isViewingCurrentWeek)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            color: Colors.deepPurple.shade800,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.history, color: Colors.white70, size: 18),
-                const SizedBox(width: 8),
-                const Text(
-                  'Viewing Past Results',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentWeekIndex = _currentWeek!.id;
-                      _isViewingCurrentWeek = true;
-                      _weekResult = _currentWeekResult;
-                    });
-                  },
-                  child: const Text('Back to Current Week'),
-                ),
-              ],
-            ),
-          ),
         Expanded(
           child: ListView.builder(
             padding: EdgeInsets.symmetric(
@@ -676,6 +644,57 @@ class _HomeScreenState extends State<HomeScreen> {
               _errorMessage!,
               style: const TextStyle(color: Colors.red),
               textAlign: TextAlign.center,
+            ),
+          ),
+        if (!_isViewingCurrentWeek)
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: 16,
+            ),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.deepPurple.shade800,
+                border: Border.all(
+                  color: Colors.deepPurple.shade300,
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.history, color: Colors.white70, size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Viewing Past Results',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _currentWeekIndex = _currentWeek!.id;
+                        _isViewingCurrentWeek = true;
+                        _weekResult = _currentWeekResult;
+                      });
+                    },
+                    child: const Text(
+                      'Back to Current Week', 
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                        ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         if (_authService.isLoggedIn && _isViewingCurrentWeek && _hasChanges())
