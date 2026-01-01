@@ -31,20 +31,24 @@ public class Vote {
     @JsonIgnoreProperties({"votingWeek"})
     private List<TimeSlot> timeslots;
 
-    @ManyToOne
-    @JoinColumn(name = "preferred_timeslot_id")
+    @ManyToMany
+    @JoinTable(
+            name = "vote_preferred_timeslots",
+            joinColumns = @JoinColumn(name = "vote_id"),
+            inverseJoinColumns = @JoinColumn(name = "timeslot_id")
+    )
     @JsonIgnoreProperties({"votingWeek"})
-    private TimeSlot preferredTimeSlot;
+    private List<TimeSlot> preferredTimeSlots;
 
     public Vote(String voterName, List<TimeSlot> timeslots) {
         this.voterName = voterName;
         this.timeslots = timeslots;
     }
 
-    public Vote(String voterName, List<TimeSlot> timeslots, TimeSlot preferredTimeSlot) {
+    public Vote(String voterName, List<TimeSlot> timeslots, List<TimeSlot> preferredTimeSlots) {
         this.voterName = voterName;
         this.timeslots = timeslots;
-        this.preferredTimeSlot = preferredTimeSlot;
+        this.preferredTimeSlots = preferredTimeSlots;
     }
 
 }

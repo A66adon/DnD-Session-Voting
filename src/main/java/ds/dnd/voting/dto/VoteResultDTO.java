@@ -13,6 +13,6 @@ import java.util.List;
 public class VoteResultDTO {
     private String voterName;
     private List<LocalDateTime> votedTimeslots;
-    private LocalDateTime preferredTimeslot;
+    private List<LocalDateTime> preferredTimeslots;
 }
 

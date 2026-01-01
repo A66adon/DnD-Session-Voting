@@ -87,8 +87,8 @@ class VotingService {
   
   /// Submit a vote (requires authentication)
   /// [timeSlotIds] - List of time slot IDs the user is available for
-  /// [preferredTimeSlotId] - The user's preferred time slot ID (must be in timeSlotIds)
-  Future<void> submitVote(List<int> timeSlotIds, {int? preferredTimeSlotId}) async {
+  /// [preferredTimeSlotIds] - List of the user's preferred time slot IDs (must be in timeSlotIds)
+  Future<void> submitVote(List<int> timeSlotIds, {List<int>? preferredTimeSlotIds}) async {
     if (!_authService.isLoggedIn) {
       throw Exception('Not authenticated. Please login first.');
     }
@@ -96,8 +96,8 @@ class VotingService {
     final body = <String, dynamic>{
       'timeSlotIds': timeSlotIds,
     };
-    if (preferredTimeSlotId != null) {
-      body['preferredTimeSlotId'] = preferredTimeSlotId;
+    if (preferredTimeSlotIds != null && preferredTimeSlotIds.isNotEmpty) {
+      body['preferredTimeSlotIds'] = preferredTimeSlotIds;
     }
 
     final response = await http.post(
