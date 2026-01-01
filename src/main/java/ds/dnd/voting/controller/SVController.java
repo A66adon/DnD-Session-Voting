@@ -41,7 +41,11 @@ public class SVController {
      */
     @GetMapping("/week/{weekId}/results")
     public ResponseEntity<WeekResultDTO> getWeekResults(@PathVariable Long weekId) {
-        return ResponseEntity.ok(votingService.getWeekResults(weekId));
+        WeekResultDTO result = votingService.getWeekResults(weekId);
+        if (result == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(result);
     }
 
     /**
