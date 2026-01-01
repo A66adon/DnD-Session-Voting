@@ -19,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   VotingWeek? _currentWeek;
   WeekResult? _weekResult;
-  List<WeekResult>? _allWeeks;
+  WeekResult? _currentWeekResult;
   int _currentWeekIndex = 0;
   bool _isViewingCurrentWeek = true;
   final Set<int> _selectedSlots = {};
@@ -92,10 +92,11 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       setState(() {
-        _currentWeekIndex = 0;
         _isViewingCurrentWeek = true;
         _currentWeek = week;
+        _currentWeekIndex = _currentWeek!.id;
         _weekResult = result;
+        _currentWeekResult = result;
         _originalSelectedSlots = Set.from(_selectedSlots);
         _originalPreferredSlotId = _preferredSlotId;
         _isLoading = false;
@@ -156,43 +157,34 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _navigateToPreviousWeek() async {
-    // Lazy load all weeks on first navigation
-    if (_allWeeks == null) {
-      try {
-        final allWeeks = await _votingService.getAllWeeks();
-        allWeeks.sort((a, b) => b.weekId.compareTo(a.weekId));
-        setState(() {
-          _allWeeks = allWeeks;
-        });
-      } catch (e) {
-        setState(() {
-          _errorMessage = 'Failed to load week history';
-        });
-        return;
-      }
+    WeekResult viewPreviousWeek = _weekResult!;
+    try {
+      viewPreviousWeek = await _votingService.getWeekResults(_currentWeekIndex - 1);
+    }catch (e) {
+      return; // No previous week available
     }
 
-    if (_currentWeekIndex >= _allWeeks!.length - 1) return;
-    setState(() {
-      _currentWeekIndex++;
-      _isViewingCurrentWeek = false;
-      _weekResult = _allWeeks![_currentWeekIndex];
-    });
-  }
+  setState(() {
+    _currentWeekIndex--;
+    _isViewingCurrentWeek = _currentWeekIndex == _currentWeek!.id ? true : false;
+    _weekResult = viewPreviousWeek;
+  });
+}
 
-  void _navigateToNextWeek() {
-    if (_allWeeks == null || _currentWeekIndex <= 0) return;
-    setState(() {
-      _currentWeekIndex--;
-      _isViewingCurrentWeek = _currentWeekIndex == 0;
-      if (_isViewingCurrentWeek && _currentWeek != null) {
-        // Reload current week result when going back to current
-        _loadCurrentWeek();
-      } else {
-        _weekResult = _allWeeks![_currentWeekIndex];
-      }
-    });
-  }
+  Future<void> _navigateToNextWeek() async {
+    WeekResult viewNextWeek = _weekResult!;
+    try {
+      viewNextWeek = await _votingService.getWeekResults(_currentWeekIndex + 1);
+    }catch (e) {
+      return; // No next week available
+    }
+
+  setState(() {
+    _currentWeekIndex++;
+    _isViewingCurrentWeek = _currentWeekIndex == _currentWeek!.id ? true : false;
+    _weekResult = viewNextWeek;
+  });
+}
 
   int _getWeekOfYear(DateTime date) {
     final firstDayOfYear = DateTime(date.year, 1, 1);
@@ -236,9 +228,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final weekNumber = displayedDeadline != null
         ? _getWeekOfYear(displayedDeadline)
         : 0;
-    final canGoBack =
-        _allWeeks != null && _currentWeekIndex < _allWeeks!.length - 1;
-    final canGoForward = _currentWeekIndex > 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -255,12 +244,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       IconButton(
                         icon: Icon(
                           Icons.arrow_back_ios,
-                          color: canGoBack
-                              ? Colors.white
-                              : Colors.grey.shade700,
+                          color:  Colors.white,
                           size: 20,
                         ),
-                        onPressed: canGoBack ? _navigateToPreviousWeek : null,
+                        onPressed: _navigateToPreviousWeek,
                         tooltip: 'Previous week',
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -277,12 +264,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       IconButton(
                         icon: Icon(
                           Icons.arrow_forward_ios,
-                          color: canGoForward
-                              ? Colors.white
-                              : Colors.grey.shade700,
+                          color: Colors.white,
                           size: 20,
                         ),
-                        onPressed: canGoForward ? _navigateToNextWeek : null,
+                        onPressed: _navigateToNextWeek,
                         tooltip: 'Next week',
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -539,7 +524,7 @@ class _HomeScreenState extends State<HomeScreen> {
       (0.92, 0.82, 1.0, 0.4, false),
       (0.04, 0.92, 1.5, 0.5, false),
       (0.96, 0.95, 2.0, 0.6, true),
-      // Extra stars for more magic feel
+      // Extra stars
       (0.25, 0.12, 1.0, 0.35, false),
       (0.75, 0.10, 1.5, 0.45, false),
       (0.35, 0.25, 0.8, 0.3, false),
@@ -631,40 +616,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Column(
       children: [
-        // Show "Viewing History" banner when not on current week
-        if (!_isViewingCurrentWeek)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            color: Colors.deepPurple.shade800,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.history, color: Colors.white70, size: 18),
-                const SizedBox(width: 8),
-                const Text(
-                  'Viewing Past Results',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentWeekIndex = 0;
-                      _isViewingCurrentWeek = true;
-                      if (_allWeeks != null && _allWeeks!.isNotEmpty) {
-                        _weekResult = _allWeeks![0];
-                      }
-                    });
-                  },
-                  child: const Text('Back to Current Week'),
-                ),
-              ],
-            ),
-          ),
         Expanded(
           child: ListView.builder(
             padding: EdgeInsets.symmetric(
@@ -693,6 +644,57 @@ class _HomeScreenState extends State<HomeScreen> {
               _errorMessage!,
               style: const TextStyle(color: Colors.red),
               textAlign: TextAlign.center,
+            ),
+          ),
+        if (!_isViewingCurrentWeek)
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: 16,
+            ),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.deepPurple.shade800,
+                border: Border.all(
+                  color: Colors.deepPurple.shade300,
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.history, color: Colors.white70, size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Viewing Past Results',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _currentWeekIndex = _currentWeek!.id;
+                        _isViewingCurrentWeek = true;
+                        _weekResult = _currentWeekResult;
+                      });
+                    },
+                    child: const Text(
+                      'Back to Current Week', 
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                        ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         if (_authService.isLoggedIn && _isViewingCurrentWeek && _hasChanges())
@@ -773,8 +775,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTimeSlotCard(TimeSlot slot, DateTime date) {
-    final isSelected = _selectedSlots.contains(slot.id);
-    final isPreferred = _preferredSlotId == slot.id;
+    final isSelected = _isViewingCurrentWeek ? _selectedSlots.contains(slot.id) : false;
+    final isPreferred = _isViewingCurrentWeek ? _preferredSlotId == slot.id : false;
 
     // Check if this slot is a winner
     final isWinner =

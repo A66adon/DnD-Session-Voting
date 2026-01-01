@@ -42,12 +42,15 @@ public class VotingService {
 
     /**
      * Get detailed results for a specific week including who voted for what
+     * Returns null if the week doesn't exist (no error thrown)
      */
     @Transactional(readOnly = true)
     public WeekResultDTO getWeekResults(Long weekId) {
-        VotingWeek week = votingWeekRepository.findById(weekId)
-                .orElseThrow(() -> new RuntimeException("Week not found"));
-        return buildWeekResultDTO(week);
+        Optional<VotingWeek> weekOpt = votingWeekRepository.findById(weekId);
+        if (weekOpt.isEmpty()) {
+            return null; // Week doesn't exist, return null instead of throwing exception
+        }
+        return buildWeekResultDTO(weekOpt.get());
     }
 
     /**
@@ -148,6 +151,7 @@ public class VotingService {
         return allWeeks.stream()
                 .filter(week -> week.getDeadline().isBefore(LocalDate.now()))
                 .map(week -> getWeekResults(week.getId()))
+                .filter(Objects::nonNull) // Filter out any null results
                 .collect(Collectors.toList());
     }
 
@@ -160,6 +164,7 @@ public class VotingService {
 
         return allWeeks.stream()
                 .map(week -> getWeekResults(week.getId()))
+                .filter(Objects::nonNull) // Filter out any null results
                 .collect(Collectors.toList());
     }
 
