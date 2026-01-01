@@ -24,8 +24,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isViewingCurrentWeek = true;
   final Set<int> _selectedSlots = {};
   Set<int> _originalSelectedSlots = {};
-  int? _preferredSlotId;
-  int? _originalPreferredSlotId;
+  final Set<int> _preferredSlotIds = {};
+  Set<int> _originalPreferredSlotIds = {};
   bool _isLoading = true;
   bool _isSubmitting = false;
   String? _errorMessage;
@@ -59,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
             .firstOrNull;
         if (userVote != null) {
           _selectedSlots.clear();
-          _preferredSlotId = null;
+          _preferredSlotIds.clear();
 
           for (final votedTime in userVote.votedTimeslots) {
             // Find matching slot by datetime
@@ -75,15 +75,15 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           }
 
-          // Set preferred slot
-          if (userVote.preferredTimeslot != null) {
+          // Set preferred slots
+          for (final preferredTime in userVote.preferredTimeslots) {
             for (final slot in week.timeSlots) {
-              if (slot.datetime.year == userVote.preferredTimeslot!.year &&
-                  slot.datetime.month == userVote.preferredTimeslot!.month &&
-                  slot.datetime.day == userVote.preferredTimeslot!.day &&
-                  slot.datetime.hour == userVote.preferredTimeslot!.hour &&
-                  slot.datetime.minute == userVote.preferredTimeslot!.minute) {
-                _preferredSlotId = slot.id;
+              if (slot.datetime.year == preferredTime.year &&
+                  slot.datetime.month == preferredTime.month &&
+                  slot.datetime.day == preferredTime.day &&
+                  slot.datetime.hour == preferredTime.hour &&
+                  slot.datetime.minute == preferredTime.minute) {
+                _preferredSlotIds.add(slot.id);
                 break;
               }
             }
@@ -98,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _weekResult = result;
         _currentWeekResult = result;
         _originalSelectedSlots = Set.from(_selectedSlots);
-        _originalPreferredSlotId = _preferredSlotId;
+        _originalPreferredSlotIds = Set.from(_preferredSlotIds);
         _isLoading = false;
       });
     } catch (e) {
@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await _votingService.submitVote(
         _selectedSlots.toList(),
-        preferredTimeSlotId: _preferredSlotId,
+        preferredTimeSlotIds: _preferredSlotIds.isNotEmpty ? _preferredSlotIds.toList() : null,
       );
       setState(() {
         _isSubmitting = false;
@@ -141,18 +141,20 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       if (_selectedSlots.contains(slotId)) {
         _selectedSlots.remove(slotId);
-        if (_preferredSlotId == slotId) {
-          _preferredSlotId = null;
-        }
+        _preferredSlotIds.remove(slotId);
       } else {
         _selectedSlots.add(slotId);
       }
     });
   }
 
-  void _setPreferredSlot(int slotId) {
+  void _togglePreferredSlot(int slotId) {
     setState(() {
-      _preferredSlotId = slotId;
+      if (_preferredSlotIds.contains(slotId)) {
+        _preferredSlotIds.remove(slotId);
+      } else {
+        _preferredSlotIds.add(slotId);
+      }
     });
   }
 
@@ -500,7 +502,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedSlots.length != _originalSelectedSlots.length) return true;
     if (!_selectedSlots.every((id) => _originalSelectedSlots.contains(id)))
       return true;
-    if (_preferredSlotId != _originalPreferredSlotId) return true;
+    if (_preferredSlotIds.length != _originalPreferredSlotIds.length) return true;
+    if (!_preferredSlotIds.every((id) => _originalPreferredSlotIds.contains(id)))
+      return true;
     return false;
   }
 
@@ -776,7 +780,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildTimeSlotCard(TimeSlot slot, DateTime date) {
     final isSelected = _isViewingCurrentWeek ? _selectedSlots.contains(slot.id) : false;
-    final isPreferred = _isViewingCurrentWeek ? _preferredSlotId == slot.id : false;
+    final isPreferred = _isViewingCurrentWeek ? _preferredSlotIds.contains(slot.id) : false;
 
     // Check if this slot is a winner
     final isWinner =
@@ -837,7 +841,7 @@ class _HomeScreenState extends State<HomeScreen> {
               : null,
           onLongPress:
               _authService.isLoggedIn && _isViewingCurrentWeek && isSelected
-              ? () => _setPreferredSlot(slot.id)
+              ? () => _togglePreferredSlot(slot.id)
               : null,
           borderRadius: BorderRadius.circular(12),
           child: Container(
@@ -893,17 +897,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           final index = entry.key;
                           final voter = entry.value;
                           final isPreferredVote =
-                              voter.preferredTimeslot != null &&
-                              voter.preferredTimeslot!.year ==
-                                  slot.datetime.year &&
-                              voter.preferredTimeslot!.month ==
-                                  slot.datetime.month &&
-                              voter.preferredTimeslot!.day ==
-                                  slot.datetime.day &&
-                              voter.preferredTimeslot!.hour ==
-                                  slot.datetime.hour &&
-                              voter.preferredTimeslot!.minute ==
-                                  slot.datetime.minute;
+                              voter.preferredTimeslots.any(
+                                (t) =>
+                                    t.year == slot.datetime.year &&
+                                    t.month == slot.datetime.month &&
+                                    t.day == slot.datetime.day &&
+                                    t.hour == slot.datetime.hour &&
+                                    t.minute == slot.datetime.minute,
+                              );
                           return Positioned(
                             left: index * 18.0,
                             child: Tooltip(

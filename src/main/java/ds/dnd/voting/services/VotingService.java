@@ -77,7 +77,12 @@ public class VotingService {
                                 .map(TimeSlot::getDatetime)
                                 .sorted()
                                 .collect(Collectors.toList()),
-                        vote.getPreferredTimeSlot() != null ? vote.getPreferredTimeSlot().getDatetime() : null
+                        vote.getPreferredTimeSlots() != null ?
+                                vote.getPreferredTimeSlots().stream()
+                                        .map(TimeSlot::getDatetime)
+                                        .sorted()
+                                        .collect(Collectors.toList()) :
+                                new ArrayList<>()
                 ))
                 .toList();
 
@@ -252,7 +257,7 @@ public class VotingService {
      * If the user has already voted, the existing vote will be updated
      */
     @Transactional
-    public Vote submitVote(String voterName, List<Long> timeSlotIds, Long preferredTimeSlotId) {
+    public Vote submitVote(String voterName, List<Long> timeSlotIds, List<Long> preferredTimeSlotIds) {
         VotingWeek currentWeek = getCurrentWeek();
 
         // Verify all timeslots belong to current week
@@ -265,15 +270,18 @@ public class VotingService {
             throw new RuntimeException("Some timeslots do not belong to the current voting week");
         }
 
-        // Handle preferred timeslot
-        TimeSlot preferredTimeSlot = null;
-        if (preferredTimeSlotId != null) {
-            // Verify preferred timeslot is one of the selected timeslots
-            if (!timeSlotIds.contains(preferredTimeSlotId)) {
-                throw new RuntimeException("Preferred timeslot must be one of the selected timeslots");
+        // Handle preferred timeslots
+        List<TimeSlot> preferredTimeSlots = new ArrayList<>();
+        if (preferredTimeSlotIds != null && !preferredTimeSlotIds.isEmpty()) {
+            // Verify all preferred timeslots are part of the selected timeslots
+            if (!timeSlotIds.containsAll(preferredTimeSlotIds)) {
+                throw new RuntimeException("All preferred timeslots must be among the selected timeslots");
             }
-            preferredTimeSlot = timeSlotRepository.findById(preferredTimeSlotId)
-                    .orElseThrow(() -> new RuntimeException("Preferred timeslot not found"));
+            preferredTimeSlots = timeSlotRepository.findAllById(preferredTimeSlotIds);
+
+            if (preferredTimeSlots.size() != preferredTimeSlotIds.size()) {
+                throw new RuntimeException("Some preferred timeslots not found");
+            }
         }
 
         // Check if user has already voted for this week
@@ -285,12 +293,16 @@ public class VotingService {
             vote = existingVote.get();
             vote.getTimeslots().clear();
             vote.getTimeslots().addAll(timeSlots);
-            vote.setPreferredTimeSlot(preferredTimeSlot);
-            log.info("Updated vote for {} with {} timeslots, preferred: {}", voterName, timeSlotIds.size(), preferredTimeSlotId);
+            if (vote.getPreferredTimeSlots() == null) {
+                vote.setPreferredTimeSlots(new ArrayList<>());
+            }
+            vote.getPreferredTimeSlots().clear();
+            vote.getPreferredTimeSlots().addAll(preferredTimeSlots);
+            log.info("Updated vote for {} with {} timeslots, preferred: {}", voterName, timeSlotIds.size(), preferredTimeSlotIds != null ? preferredTimeSlotIds.size() : 0);
         } else {
             // Create new vote
-            vote = new Vote(voterName, timeSlots, preferredTimeSlot);
-            log.info("Created new vote for {} with {} timeslots, preferred: {}", voterName, timeSlotIds.size(), preferredTimeSlotId);
+            vote = new Vote(voterName, timeSlots, preferredTimeSlots);
+            log.info("Created new vote for {} with {} timeslots, preferred: {}", voterName, timeSlotIds.size(), preferredTimeSlotIds != null ? preferredTimeSlotIds.size() : 0);
         }
 
         return voteRepository.save(vote);

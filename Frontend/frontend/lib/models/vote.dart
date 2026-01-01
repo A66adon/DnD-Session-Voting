@@ -6,14 +6,14 @@ class VoteResponse {
   final String username;
   final DateTime votedAt;
   final List<TimeSlot> selectedTimeSlots;
-  final TimeSlot? preferredTimeSlot;
+  final List<TimeSlot> preferredTimeSlots;
 
   VoteResponse({
     required this.id,
     required this.username,
     required this.votedAt,
     required this.selectedTimeSlots,
-    this.preferredTimeSlot,
+    required this.preferredTimeSlots,
   });
 
   factory VoteResponse.fromJson(Map<String, dynamic> json) {
@@ -24,9 +24,9 @@ class VoteResponse {
       selectedTimeSlots: (json['selectedTimeSlots'] as List<dynamic>)
           .map((e) => TimeSlot.fromJson(e as Map<String, dynamic>))
           .toList(),
-      preferredTimeSlot: json['preferredTimeSlot'] != null
-          ? TimeSlot.fromJson(json['preferredTimeSlot'] as Map<String, dynamic>)
-          : null,
+      preferredTimeSlots: (json['preferredTimeSlots'] as List<dynamic>?)
+          ?.map((e) => TimeSlot.fromJson(e as Map<String, dynamic>))
+          .toList() ?? [],
     );
   }
 }

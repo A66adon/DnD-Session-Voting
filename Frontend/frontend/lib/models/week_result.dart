@@ -3,12 +3,12 @@ import 'time_slot.dart';
 class VoterInfo {
   final String voterName;
   final List<DateTime> votedTimeslots;
-  final DateTime? preferredTimeslot;
+  final List<DateTime> preferredTimeslots;
 
   VoterInfo({
     required this.voterName,
     required this.votedTimeslots,
-    this.preferredTimeslot,
+    required this.preferredTimeslots,
   });
 
   factory VoterInfo.fromJson(Map<String, dynamic> json) {
@@ -17,9 +17,9 @@ class VoterInfo {
       votedTimeslots: (json['votedTimeslots'] as List<dynamic>)
           .map((e) => DateTime.parse(e as String))
           .toList(),
-      preferredTimeslot: json['preferredTimeslot'] != null && json['preferredTimeslot'] != ''
-          ? DateTime.parse(json['preferredTimeslot'] as String)
-          : null,
+      preferredTimeslots: (json['preferredTimeslots'] as List<dynamic>?)
+          ?.map((e) => DateTime.parse(e as String))
+          .toList() ?? [],
     );
   }
 }

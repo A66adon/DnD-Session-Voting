@@ -11,6 +11,6 @@ import java.util.List;
 @AllArgsConstructor
 public class VoteRequestDTO {
     private List<Long> timeSlotIds;
-    private Long preferredTimeSlotId;
+    private List<Long> preferredTimeSlotIds;
 }
 
