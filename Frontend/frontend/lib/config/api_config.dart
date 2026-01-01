@@ -4,8 +4,9 @@ class ApiConfig {
   // For Android emulator use: http://10.0.2.2:8080
   // For iOS simulator use: http://localhost:8080
   // For physical device use your computer's IP: http://192.168.x.x:8080
-  // For web use: http://localhost:8080
-  static const String baseUrl = 'http://localhost:8081';
+  // For web use: http://localhost:8081
+  //For deployed backen use: https://dnd-session-voting-production.up.railway.app
+  static const String baseUrl = 'https://dnd-session-voting-production.up.railway.app';
   
   // Auth endpoints
   static const String loginEndpoint = '/api/auth/login';
