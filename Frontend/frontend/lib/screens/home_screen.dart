@@ -756,8 +756,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTimeSlotCard(TimeSlot slot, DateTime date) {
-    final isSelected = _selectedSlots.contains(slot.id);
-    final isPreferred = _preferredSlotId == slot.id;
+    final isSelected = _isViewingCurrentWeek ? _selectedSlots.contains(slot.id) : false;
+    final isPreferred = _isViewingCurrentWeek ? _preferredSlotId == slot.id : false;
 
     // Check if this slot is a winner
     final isWinner =
