@@ -159,34 +159,43 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _navigateToPreviousWeek() async {
-    WeekResult viewPreviousWeek = _weekResult!;
+    if (_currentWeek == null) return;
+
+    final targetWeekIndex = _currentWeekIndex - 1;
+    if (targetWeekIndex < 1) return; // Already at the first week
+
+    WeekResult viewPreviousWeek;
     try {
-      viewPreviousWeek = await _votingService.getWeekResults(_currentWeekIndex - 1);
-    }catch (e) {
-      return; // No previous week available
+      viewPreviousWeek = await _votingService.getWeekResults(targetWeekIndex);
+    } catch (_) {
+      return; // No previous week available or failed to load
     }
 
-  setState(() {
-    _currentWeekIndex--;
-    _isViewingCurrentWeek = _currentWeekIndex == _currentWeek!.id ? true : false;
-    _weekResult = viewPreviousWeek;
-  });
-}
+    setState(() {
+      _currentWeekIndex = targetWeekIndex;
+      _isViewingCurrentWeek = _currentWeekIndex == _currentWeek!.id;
+      _weekResult = viewPreviousWeek;
+    });
+  }
 
   Future<void> _navigateToNextWeek() async {
-    WeekResult viewNextWeek = _weekResult!;
+    if (_currentWeek == null) return;
+
+    final targetWeekIndex = _currentWeekIndex + 1;
+
+    WeekResult viewNextWeek;
     try {
-      viewNextWeek = await _votingService.getWeekResults(_currentWeekIndex + 1);
-    }catch (e) {
-      return; // No next week available
+      viewNextWeek = await _votingService.getWeekResults(targetWeekIndex);
+    } catch (_) {
+      return; // No next week available or failed to load
     }
 
-  setState(() {
-    _currentWeekIndex++;
-    _isViewingCurrentWeek = _currentWeekIndex == _currentWeek!.id ? true : false;
-    _weekResult = viewNextWeek;
-  });
-}
+    setState(() {
+      _currentWeekIndex = targetWeekIndex;
+      _isViewingCurrentWeek = _currentWeekIndex == _currentWeek!.id;
+      _weekResult = viewNextWeek;
+    });
+  }
 
   int _getWeekOfYear(DateTime date) {
     final firstDayOfYear = DateTime(date.year, 1, 1);
