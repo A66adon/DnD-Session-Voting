@@ -184,7 +184,7 @@ public class VotingService {
     /**
      * Scheduled task to reset the voting week every Monday at midnight
      */
-    @Scheduled(cron = "0 5 16 * * MON", zone = "Europe/Berlin")
+    @Scheduled(cron = "0 0 0 * * MON", zone = "Europe/Berlin")
     @Transactional
     public void scheduledWeekReset() {
         log.info("Scheduled week reset triggered at {}", LocalDateTime.now());
