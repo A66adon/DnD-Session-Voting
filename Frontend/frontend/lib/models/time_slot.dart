@@ -25,7 +25,6 @@ class TimeSlotResult {
   final DateTime datetime;
   final int voteCount;
   final int preferredVoteCount;
-  final double weightedVoteCount;
   final bool winner;
 
   TimeSlotResult({
@@ -33,7 +32,6 @@ class TimeSlotResult {
     required this.datetime,
     required this.voteCount,
     required this.preferredVoteCount,
-    required this.weightedVoteCount,
     required this.winner,
   });
 
@@ -43,7 +41,6 @@ class TimeSlotResult {
       datetime: DateTime.parse(json['datetime'] as String),
       voteCount: json['voteCount'] as int,
       preferredVoteCount: json['preferredVoteCount'] as int? ?? 0,
-      weightedVoteCount: (json['weightedVoteCount'] as num?)?.toDouble() ?? 0.0,
       winner: json['winner'] as bool? ?? false,
     );
   }
