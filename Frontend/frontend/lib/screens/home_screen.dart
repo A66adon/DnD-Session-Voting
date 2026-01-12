@@ -615,8 +615,21 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Center(child: Text('No voting week available'));
     }
 
+    // Use timeSlots from the currently viewed week (from _weekResult if viewing past week)
+    final List<TimeSlot> displayedTimeSlots;
+    if (_isViewingCurrentWeek) {
+      displayedTimeSlots = _currentWeek!.timeSlots;
+    } else if (_weekResult != null) {
+      // Convert TimeSlotResult to TimeSlot for past weeks
+      displayedTimeSlots = _weekResult!.timeSlots
+          .map((tsr) => TimeSlot(id: tsr.timeSlotId, datetime: tsr.datetime))
+          .toList();
+    } else {
+      displayedTimeSlots = _currentWeek!.timeSlots;
+    }
+
     final slotsByDate = <DateTime, List<TimeSlot>>{};
-    for (final slot in _currentWeek!.timeSlots) {
+    for (final slot in displayedTimeSlots) {
       final date = DateTime(
         slot.datetime.year,
         slot.datetime.month,
