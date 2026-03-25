@@ -287,7 +287,13 @@ public class VotingService {
                 : new ArrayList<>(new LinkedHashSet<>(timeSlotIds));
 
         if (uniqueTimeSlotIds.isEmpty()) {
-            throw new RuntimeException("At least one timeslot must be selected");
+            // Empty selection means the user wants to remove their existing vote.
+            Optional<Vote> existingVote = voteRepository.findByVoterNameAndVotingWeek(voterName, currentWeek.getId());
+            existingVote.ifPresent(vote -> {
+                voteRepository.delete(vote);
+                log.info("Deleted vote for {} in week {}", voterName, currentWeek.getId());
+            });
+            return null;
         }
 
         // Verify all timeslots belong to current week

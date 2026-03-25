@@ -68,6 +68,9 @@ public class SVController {
                 voteRequest.getTimeSlotIds(),
                 voteRequest.getPreferredTimeSlotIds()
         );
+        if (vote == null) {
+            return ResponseEntity.ok().build();
+        }
         return ResponseEntity.ok(vote);
     }
 
