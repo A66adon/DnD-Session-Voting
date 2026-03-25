@@ -45371,7 +45371,7 @@ return A.L($async$Aq,r)},
 oT(a,b){return this.ar3(a,b)},
 ar3(a,b){var s=0,r=A.M(t.W8),q,p=this,o,n,m,l,k,j
 var $async$oT=A.N(function(c,d){if(c===1)return A.J(d,r)
-for(;;)switch(s){case 0:m=A.fj("http://localhost:8080/api/auth/login")
+for(;;)switch(s){case 0:m=A.fj("https://dnd-session-voting-production.up.railway.app/api/auth/login")
 l=t.N
 k=A.aq(["Content-Type","application/json"],l,l)
 s=3
@@ -45421,7 +45421,7 @@ w7(){var s=0,r=A.M(t.sh),q,p,o,n
 var $async$w7=A.N(function(a,b){if(a===1)return A.J(b,r)
 for(;;)switch(s){case 0:o=t.N
 s=3
-return A.P(A.az6(A.fj("http://localhost:8080/api/voting/current-week"),A.aq(["Content-Type","application/json"],o,o)),$async$w7)
+return A.P(A.az6(A.fj("https://dnd-session-voting-production.up.railway.app/api/voting/current-week"),A.aq(["Content-Type","application/json"],o,o)),$async$w7)
 case 3:n=b
 o=n.b
 if(o===200){p=B.ba.qK(A.a_z(A.a_n(n.e)).dS(n.w),null)
@@ -45435,7 +45435,7 @@ w6(){var s=0,r=A.M(t.FC),q,p,o
 var $async$w6=A.N(function(a,b){if(a===1)return A.J(b,r)
 for(;;)switch(s){case 0:p=t.N
 s=3
-return A.P(A.az6(A.fj("http://localhost:8080/api/voting/current-results"),A.aq(["Content-Type","application/json"],p,p)),$async$w6)
+return A.P(A.az6(A.fj("https://dnd-session-voting-production.up.railway.app/api/voting/current-results"),A.aq(["Content-Type","application/json"],p,p)),$async$w6)
 case 3:o=b
 p=o.b
 if(p===200){q=A.aEo(B.ba.qK(A.a_z(A.a_n(o.e)).dS(o.w),null))
@@ -45448,7 +45448,7 @@ a_o(a){var s=0,r=A.M(t.FC),q,p,o
 var $async$rY=A.N(function(b,c){if(b===1)return A.J(c,r)
 for(;;)switch(s){case 0:p=t.N
 s=3
-return A.P(A.az6(A.fj("http://localhost:8080"+("/api/voting/week/"+a+"/results")),A.aq(["Content-Type","application/json"],p,p)),$async$rY)
+return A.P(A.az6(A.fj("https://dnd-session-voting-production.up.railway.app"+("/api/voting/week/"+a+"/results")),A.aq(["Content-Type","application/json"],p,p)),$async$rY)
 case 3:o=c
 if(o.b===200){q=A.aEo(B.ba.qK(A.a_z(A.a_n(o.e)).dS(o.w),null))
 s=1
@@ -45463,7 +45463,7 @@ if(l.a==null)throw A.f(A.cv("Not authenticated. Please login first."))
 o=t.N
 n=A.aq(["timeSlotIds",a],o,t.z)
 if(b!=null&&b.length!==0)n.m(0,"preferredTimeSlotIds",b)
-m=A.fj("http://localhost:8080/api/voting/vote")
+m=A.fj("https://dnd-session-voting-production.up.railway.app/api/voting/vote")
 o=A.n(o,o)
 o.m(0,"Content-Type","application/json")
 l=l.a

@@ -54,37 +54,7 @@ class VotingService {
       throw Exception('No Week found');
     }
   }
-  
-  /// Get all past weeks
-  Future<List<WeekResult>> getPastWeeks() async {
-    final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}${ApiConfig.pastWeeksEndpoint}'),
-      headers: {'Content-Type': 'application/json'},
-    );
-    
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((e) => WeekResult.fromJson(e)).toList();
-    } else {
-      throw Exception('Failed to load past weeks: ${response.statusCode}');
-    }
-  }
-  
-  /// Get all weeks
-  Future<List<WeekResult>> getAllWeeks() async {
-    final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}${ApiConfig.allWeeksEndpoint}'),
-      headers: {'Content-Type': 'application/json'},
-    );
-    
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((e) => WeekResult.fromJson(e)).toList();
-    } else {
-      throw Exception('Failed to load all weeks: ${response.statusCode}');
-    }
-  }
-  
+
   /// Submit a vote (requires authentication)
   /// [timeSlotIds] - List of time slot IDs the user is available for
   /// [preferredTimeSlotIds] - List of the user's preferred time slot IDs (must be in timeSlotIds)
