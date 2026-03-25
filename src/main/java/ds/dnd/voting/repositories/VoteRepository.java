@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public interface VoteRepository extends JpaRepository<Vote, Long> {
 
-    @Query("SELECT vote FROM Vote vote JOIN vote.timeslots timeslot WHERE timeslot.votingWeek.id = :weekId")
+    @Query("SELECT DISTINCT vote FROM Vote vote JOIN vote.timeslots timeslot WHERE timeslot.votingWeek.id = :weekId")
     List<Vote> findVotesByVotingWeek(@Param("weekId") Long weekId);
 
     @Query("SELECT DISTINCT vote FROM Vote vote JOIN vote.timeslots timeslot WHERE vote.voterName = :voterName AND timeslot.votingWeek.id = :weekId")

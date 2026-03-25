@@ -38,9 +38,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             path.startsWith("/h2-console") ||
             path.equals("/api/voting/current-week") ||
             path.equals("/api/voting/current-results") ||
-            path.startsWith("/api/voting/week/") ||
-            path.equals("/api/voting/past-weeks") ||
-            path.equals("/api/voting/all-weeks")) {
+            path.equals("/api/voting/current-results-summary") ||
+            path.startsWith("/api/voting/week/")) {
             filterChain.doFilter(request, response);
             return;
         }

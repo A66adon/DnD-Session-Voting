@@ -11,6 +11,7 @@ import ds.dnd.voting.repositories.VoteRepository;
 import ds.dnd.voting.repositories.VotingWeekRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,21 @@ public class VotingService {
     private final TimeSlotRepository timeSlotRepository;
     private final VoteRepository voteRepository;
 
+    @Value("${app.voting.retention.weeks:10}")
+    private int retentionWeeks;
+
+    private static final List<SlotTemplate> SLOT_TEMPLATES = List.of(
+            new SlotTemplate(DayOfWeek.MONDAY, LocalTime.of(18, 0)),
+            new SlotTemplate(DayOfWeek.TUESDAY, LocalTime.of(18, 0)),
+            new SlotTemplate(DayOfWeek.WEDNESDAY, LocalTime.of(18, 0)),
+            new SlotTemplate(DayOfWeek.THURSDAY, LocalTime.of(18, 0)),
+            new SlotTemplate(DayOfWeek.FRIDAY, LocalTime.of(18, 0)),
+            new SlotTemplate(DayOfWeek.SATURDAY, LocalTime.of(10, 0)),
+            new SlotTemplate(DayOfWeek.SATURDAY, LocalTime.of(18, 0)),
+            new SlotTemplate(DayOfWeek.SUNDAY, LocalTime.of(10, 0)),
+            new SlotTemplate(DayOfWeek.SUNDAY, LocalTime.of(18, 0))
+    );
+
     /**
      * Get the current active voting week
      */
@@ -47,10 +63,8 @@ public class VotingService {
     @Transactional(readOnly = true)
     public WeekResultDTO getWeekResults(Long weekId) {
         Optional<VotingWeek> weekOpt = votingWeekRepository.findById(weekId);
-        if (weekOpt.isEmpty()) {
-            return null; // Week doesn't exist, return null instead of throwing exception
-        }
-        return buildWeekResultDTO(weekOpt.get());
+        // Week doesn't exist, return null instead of throwing exception
+        return weekOpt.map(week -> buildWeekResultDTO(week, true)).orElse(null);
     }
 
     /**
@@ -59,43 +73,66 @@ public class VotingService {
     @Transactional(readOnly = true)
     public WeekResultDTO getCurrentWeekResults() {
         VotingWeek currentWeek = getCurrentWeek();
-        return buildWeekResultDTO(currentWeek);
+        return buildWeekResultDTO(currentWeek, true);
+    }
+
+    /**
+     * Get lightweight results for current week without full voter details.
+     */
+    @Transactional(readOnly = true)
+    public WeekResultDTO getCurrentWeekResultsSummary() {
+        VotingWeek currentWeek = getCurrentWeek();
+        return buildWeekResultDTO(currentWeek, false);
     }
 
     /**
      * Build a WeekResultDTO from a VotingWeek
      * Contains vote results, timeslot statistics, and winner determination
      */
-    private WeekResultDTO buildWeekResultDTO(VotingWeek week) {
+    private WeekResultDTO buildWeekResultDTO(VotingWeek week, boolean includeVotes) {
         List<Vote> votes = voteRepository.findVotesByVotingWeek(week.getId());
 
+        Map<Long, Integer> voteCounts = new HashMap<>();
+        Map<Long, Integer> preferredVoteCounts = new HashMap<>();
+
+        for (Vote vote : votes) {
+            Set<Long> uniqueVotedSlotIds = new HashSet<>();
+            for (TimeSlot slot : safeSlots(vote.getTimeslots())) {
+                if (uniqueVotedSlotIds.add(slot.getId())) {
+                    voteCounts.merge(slot.getId(), 1, Integer::sum);
+                }
+            }
+
+            Set<Long> uniquePreferredSlotIds = new HashSet<>();
+            for (TimeSlot slot : safeSlots(vote.getPreferredTimeSlots())) {
+                if (uniquePreferredSlotIds.add(slot.getId())) {
+                    preferredVoteCounts.merge(slot.getId(), 1, Integer::sum);
+                }
+            }
+        }
+
         // Create vote results showing who voted for what
-        List<VoteResultDTO> voteResults = votes.stream()
+        List<VoteResultDTO> voteResults = includeVotes
+                ? votes.stream()
                 .map(vote -> new VoteResultDTO(
                         vote.getVoterName(),
-                        vote.getTimeslots().stream()
+                        safeSlots(vote.getTimeslots()).stream()
                                 .map(TimeSlot::getDatetime)
                                 .sorted()
                                 .collect(Collectors.toList()),
-                        vote.getPreferredTimeSlots() != null ?
-                                vote.getPreferredTimeSlots().stream()
-                                        .map(TimeSlot::getDatetime)
-                                        .sorted()
-                                        .collect(Collectors.toList()) :
-                                new ArrayList<>()
+                        safeSlots(vote.getPreferredTimeSlots()).stream()
+                                .map(TimeSlot::getDatetime)
+                                .sorted()
+                                .collect(Collectors.toList())
                 ))
-                .toList();
+                .toList()
+                : List.of();
 
         // Calculate statistics for each timeslot
         List<TimeSlotStatsDTO> timeSlotStats = week.getTimeSlots().stream()
                 .map(timeSlot -> {
-                    int voteCount = timeSlotRepository
-                            .countVotesByTimeSlotId(timeSlot.getId())
-                            .intValue();
-
-                    int preferredCount = timeSlotRepository
-                            .countPreferredVotesByTimeSlotId(timeSlot.getId())
-                            .intValue();
+                    int voteCount = voteCounts.getOrDefault(timeSlot.getId(), 0);
+                    int preferredCount = preferredVoteCounts.getOrDefault(timeSlot.getId(), 0);
 
                     return new TimeSlotStatsDTO(
                             timeSlot.getId(),
@@ -147,33 +184,6 @@ public class VotingService {
     }
 
     /**
-     * Get all past weeks with their results
-     */
-    @Transactional(readOnly = true)
-    public List<WeekResultDTO> getAllPastWeeks() {
-        List<VotingWeek> allWeeks = votingWeekRepository.findAllByOrderByDeadlineDesc();
-
-        return allWeeks.stream()
-                .filter(week -> week.getDeadline().isBefore(LocalDate.now()))
-                .map(week -> getWeekResults(week.getId()))
-                .filter(Objects::nonNull) // Filter out any null results
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Get all weeks including current
-     */
-    @Transactional(readOnly = true)
-    public List<WeekResultDTO> getAllWeeks() {
-        List<VotingWeek> allWeeks = votingWeekRepository.findAllByOrderByDeadlineDesc();
-
-        return allWeeks.stream()
-                .map(week -> getWeekResults(week.getId()))
-                .filter(Objects::nonNull) // Filter out any null results
-                .collect(Collectors.toList());
-    }
-
-    /**
      * Manually trigger a week reset (useful for testing)
      */
     @Transactional
@@ -189,6 +199,26 @@ public class VotingService {
     public void scheduledWeekReset() {
         log.info("Scheduled week reset triggered at {}", LocalDateTime.now());
         createNewWeek();
+    }
+
+    /**
+     * Remove old inactive weeks to keep DB size bounded.
+     */
+    @Scheduled(cron = "0 15 3 * * MON", zone = "Europe/Berlin")
+    @Transactional
+    public void cleanupOldData() {
+        LocalDate cutoff = LocalDate.now().minusWeeks(Math.max(retentionWeeks, 1));
+        List<VotingWeek> oldWeeks = votingWeekRepository.findByActiveFalseAndDeadlineBefore(cutoff);
+
+        for (VotingWeek week : oldWeeks) {
+            List<Vote> votes = voteRepository.findVotesByVotingWeek(week.getId());
+            voteRepository.deleteAll(votes);
+            votingWeekRepository.delete(week);
+        }
+
+        if (!oldWeeks.isEmpty()) {
+            log.info("Deleted {} old voting weeks older than {}", oldWeeks.size(), cutoff);
+        }
     }
 
     /**
@@ -233,18 +263,10 @@ public class VotingService {
         // Start from Monday after the deadline
         LocalDate startDate = deadline.plusDays(1); // Monday after Sunday deadline
 
-        // Generate slots for 7 days (Monday to Sunday)
-        for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
-            LocalDate date = startDate.plusDays(dayOffset);
-            DayOfWeek dayOfWeek = date.getDayOfWeek();
-
-            // All days get 18:00 slot
-            timeSlots.add(new TimeSlot(LocalDateTime.of(date, LocalTime.of(18, 0)), votingWeek));
-
-            // Saturday and Sunday also get 10:00 slot
-            if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
-                timeSlots.add(new TimeSlot(LocalDateTime.of(date, LocalTime.of(10, 0)), votingWeek));
-            }
+        // Generate exactly 9 recurring templates per week.
+        for (SlotTemplate template : SLOT_TEMPLATES) {
+            LocalDate date = startDate.plusDays(template.dayOfWeek().getValue() - 1L);
+            timeSlots.add(new TimeSlot(LocalDateTime.of(date, template.time()), votingWeek));
         }
 
         log.info("Generated {} timeslots for week starting {}", timeSlots.size(), startDate);
@@ -260,8 +282,20 @@ public class VotingService {
     public Vote submitVote(String voterName, List<Long> timeSlotIds, List<Long> preferredTimeSlotIds) {
         VotingWeek currentWeek = getCurrentWeek();
 
+        List<Long> uniqueTimeSlotIds = timeSlotIds == null
+                ? List.of()
+                : new ArrayList<>(new LinkedHashSet<>(timeSlotIds));
+
+        if (uniqueTimeSlotIds.isEmpty()) {
+            throw new RuntimeException("At least one timeslot must be selected");
+        }
+
         // Verify all timeslots belong to current week
-        List<TimeSlot> timeSlots = timeSlotRepository.findAllById(timeSlotIds);
+        List<TimeSlot> timeSlots = timeSlotRepository.findAllById(uniqueTimeSlotIds);
+
+        if (timeSlots.size() != uniqueTimeSlotIds.size()) {
+            throw new RuntimeException("Some timeslots not found");
+        }
 
         boolean allBelongToCurrentWeek = timeSlots.stream()
                 .allMatch(ts -> ts.getVotingWeek().getId().equals(currentWeek.getId()));
@@ -273,13 +307,14 @@ public class VotingService {
         // Handle preferred timeslots
         List<TimeSlot> preferredTimeSlots = new ArrayList<>();
         if (preferredTimeSlotIds != null && !preferredTimeSlotIds.isEmpty()) {
+            List<Long> uniquePreferredTimeSlotIds = new ArrayList<>(new LinkedHashSet<>(preferredTimeSlotIds));
             // Verify all preferred timeslots are part of the selected timeslots
-            if (!timeSlotIds.containsAll(preferredTimeSlotIds)) {
+            if (!new HashSet<>(uniqueTimeSlotIds).containsAll(uniquePreferredTimeSlotIds)) {
                 throw new RuntimeException("All preferred timeslots must be among the selected timeslots");
             }
-            preferredTimeSlots = timeSlotRepository.findAllById(preferredTimeSlotIds);
+            preferredTimeSlots = timeSlotRepository.findAllById(uniquePreferredTimeSlotIds);
 
-            if (preferredTimeSlots.size() != preferredTimeSlotIds.size()) {
+            if (preferredTimeSlots.size() != uniquePreferredTimeSlotIds.size()) {
                 throw new RuntimeException("Some preferred timeslots not found");
             }
         }
@@ -291,6 +326,9 @@ public class VotingService {
         if (existingVote.isPresent()) {
             // Update existing vote
             vote = existingVote.get();
+            if (vote.getTimeslots() == null) {
+                vote.setTimeslots(new ArrayList<>());
+            }
             vote.getTimeslots().clear();
             vote.getTimeslots().addAll(timeSlots);
             if (vote.getPreferredTimeSlots() == null) {
@@ -298,14 +336,21 @@ public class VotingService {
             }
             vote.getPreferredTimeSlots().clear();
             vote.getPreferredTimeSlots().addAll(preferredTimeSlots);
-            log.info("Updated vote for {} with {} timeslots, preferred: {}", voterName, timeSlotIds.size(), preferredTimeSlotIds != null ? preferredTimeSlotIds.size() : 0);
+            log.info("Updated vote for {} with {} timeslots, preferred: {}", voterName, uniqueTimeSlotIds.size(), preferredTimeSlots.size());
         } else {
             // Create new vote
             vote = new Vote(voterName, timeSlots, preferredTimeSlots);
-            log.info("Created new vote for {} with {} timeslots, preferred: {}", voterName, timeSlotIds.size(), preferredTimeSlotIds != null ? preferredTimeSlotIds.size() : 0);
+            log.info("Created new vote for {} with {} timeslots, preferred: {}", voterName, uniqueTimeSlotIds.size(), preferredTimeSlots.size());
         }
 
         return voteRepository.save(vote);
+    }
+
+    private List<TimeSlot> safeSlots(List<TimeSlot> slots) {
+        return slots == null ? List.of() : slots;
+    }
+
+    private record SlotTemplate(DayOfWeek dayOfWeek, LocalTime time) {
     }
 
 }

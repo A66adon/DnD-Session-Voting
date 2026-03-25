@@ -10,8 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/voting")
 @RequiredArgsConstructor
@@ -37,6 +35,14 @@ public class SVController {
     }
 
     /**
+     * Get lightweight results for the current week without voter-level lists.
+     */
+    @GetMapping("/current-results-summary")
+    public ResponseEntity<WeekResultDTO> getCurrentWeekResultsSummary() {
+        return ResponseEntity.ok(votingService.getCurrentWeekResultsSummary());
+    }
+
+    /**
      * Get results for a specific week by ID
      */
     @GetMapping("/week/{weekId}/results")
@@ -46,22 +52,6 @@ public class SVController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(result);
-    }
-
-    /**
-     * Get all past weeks with their results (deadlines that have passed)
-     */
-    @GetMapping("/past-weeks")
-    public ResponseEntity<List<WeekResultDTO>> getAllPastWeeks() {
-        return ResponseEntity.ok(votingService.getAllPastWeeks());
-    }
-
-    /**
-     * Get all weeks including current
-     */
-    @GetMapping("/all-weeks")
-    public ResponseEntity<List<WeekResultDTO>> getAllWeeks() {
-        return ResponseEntity.ok(votingService.getAllWeeks());
     }
 
     /**

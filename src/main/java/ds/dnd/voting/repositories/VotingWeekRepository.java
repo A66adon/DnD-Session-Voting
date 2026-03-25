@@ -6,12 +6,15 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 public interface VotingWeekRepository extends JpaRepository<VotingWeek, Long> {
 
     Optional<VotingWeek> findByActiveTrue();
+
+    List<VotingWeek> findByActiveFalseAndDeadlineBefore(LocalDate cutoff);
 
     List<VotingWeek> findAllByOrderByDeadlineDesc();
 
