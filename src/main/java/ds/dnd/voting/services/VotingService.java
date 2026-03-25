@@ -52,7 +52,7 @@ public class VotingService {
      * Get the current active voting week
      */
     public VotingWeek getCurrentWeek() {
-        return votingWeekRepository.findByActiveTrue()
+        return votingWeekRepository.findWithTimeSlotsByActiveTrue()
                 .orElseGet(this::createNewWeek);
     }
 

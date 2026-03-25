@@ -1,6 +1,7 @@
 package ds.dnd.voting.repositories;
 
 import ds.dnd.voting.model.VotingWeek;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +14,9 @@ import java.util.Optional;
 public interface VotingWeekRepository extends JpaRepository<VotingWeek, Long> {
 
     Optional<VotingWeek> findByActiveTrue();
+
+    @EntityGraph(attributePaths = "timeSlots")
+    Optional<VotingWeek> findWithTimeSlotsByActiveTrue();
 
     List<VotingWeek> findByActiveFalseAndDeadlineBefore(LocalDate cutoff);
 
