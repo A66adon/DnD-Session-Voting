@@ -30,7 +30,7 @@ Backend runs on `http://localhost:8080`.
 ### 2) Frontend (Flutter)
 
 ```bash
-cd ./DnD-Session-Voting/Frontend/frontend
+cd ./Frontend/frontend
 flutter pub get
 flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8080
 ```
@@ -94,3 +94,22 @@ Set these for the backend service:
 }
 ```
 
+### Manual reset of the Week
+
+```bash
+set API "https://dnd-session-voting-production.up.railway.app"
+
+read -P "Username: " USERNAME
+read -s -P "Voting password: " PASSWORD
+echo
+
+set TOKEN (curl -s -X POST "$API/api/auth/login" \
+-H "Content-Type: application/json" \
+-d "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\"}" \
+| jq -r '.token')
+
+echo "Token starts with: "(string sub -s 1 -l 20 "$TOKEN")"..."
+
+curl -i -X POST "$API/api/voting/reset-week" \
+-H "Authorization: Bearer $TOKEN"
+```

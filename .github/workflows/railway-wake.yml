@@ -1,0 +1,61 @@
+name: Wake Railway App
+
+on:
+  schedule:
+    # 23:55 Europe/Berlin = 21:55 UTC (summer) or 22:55 UTC (winter)
+    - cron: "55 21 * * 0"
+    - cron: "55 22 * * 0"
+  workflow_dispatch:
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate by Europe/Berlin local time
+        id: gate
+        shell: bash
+        run: |
+          DAY=$(TZ=Europe/Berlin date +%u)
+          TIME=$(TZ=Europe/Berlin date +%H:%M)
+          echo "Berlin local time: $DAY $TIME"
+
+          if [[ "$DAY" == "7" && "$TIME" == "23:55" ]]; then
+            echo "run_now=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_now=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Wake app via public endpoint
+        if: steps.gate.outputs.run_now == 'true'
+        shell: bash
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+        run: |
+          if [[ -z "$API_BASE_URL" ]]; then
+            echo "Missing secret API_BASE_URL"
+            exit 1
+          fi
+
+          echo "Waking app: $API_BASE_URL/api/voting/current-week"
+          curl --fail --silent --show-error "$API_BASE_URL/api/voting/current-week" >/dev/null
+          echo "Wake request sent"
+
+      - name: Optional auth probe
+        if: steps.gate.outputs.run_now == 'true'
+        shell: bash
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          RESET_USERNAME: ${{ secrets.RESET_USERNAME }}
+          RESET_PASSWORD: ${{ secrets.RESET_PASSWORD }}
+        run: |
+          if [[ -z "$RESET_USERNAME" || -z "$RESET_PASSWORD" ]]; then
+            echo "RESET_USERNAME/RESET_PASSWORD not set; skipping auth probe"
+            exit 0
+          fi
+
+          echo "Running auth probe"
+          curl --fail --silent --show-error -X POST "$API_BASE_URL/api/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"$RESET_USERNAME\",\"password\":\"$RESET_PASSWORD\"}" >/dev/null
+          echo "Auth probe successful"
+

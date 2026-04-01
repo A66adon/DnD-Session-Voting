@@ -5,7 +5,7 @@ class ApiConfig {
   // For iOS simulator use: http://localhost:8080
   // For physical device use your computer's IP: http://192.168.x.x:8080
   // For web use: http://localhost:8080
-  //For deployed backen use: https://dnd-session-voting-production.up.railway.app
+  //For deployed backend use: https://dnd-session-voting-production.up.railway.app
   static const String baseUrl = 'https://dnd-session-voting-production.up.railway.app';
   
   // Auth endpoints
