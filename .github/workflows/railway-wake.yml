@@ -11,15 +11,37 @@ jobs:
   wake:
     runs-on: ubuntu-latest
     steps:
-      - name: Gate by Europe/Berlin local time
+      - name: Gate by matched Sunday cron (DST-safe)
         id: gate
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TRIGGERED_CRON: ${{ github.event.schedule }}
         run: |
-          DAY=$(TZ=Europe/Berlin date +%u)
-          TIME=$(TZ=Europe/Berlin date +%H:%M)
-          echo "Berlin local time: $DAY $TIME"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "Manual run detected -> allowed"
+            echo "run_now=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
-          if [[ "$DAY" == "7" && "$TIME" == "23:55" ]]; then
+          OFFSET=$(TZ=Europe/Berlin date +%z)
+          EXPECTED_CRON=""
+
+          # Berlin 23:55 is 21:55 UTC in summer (CEST) and 22:55 UTC in winter (CET).
+          if [[ "$OFFSET" == "+0200" ]]; then
+            EXPECTED_CRON="55 21 * * 0"
+          elif [[ "$OFFSET" == "+0100" ]]; then
+            EXPECTED_CRON="55 22 * * 0"
+          else
+            echo "Unexpected Europe/Berlin offset: $OFFSET"
+            echo "run_now=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Triggered cron: '$TRIGGERED_CRON'"
+          echo "Expected cron for current Berlin offset ($OFFSET): '$EXPECTED_CRON'"
+
+          if [[ "$TRIGGERED_CRON" == "$EXPECTED_CRON" ]]; then
             echo "run_now=true" >> "$GITHUB_OUTPUT"
           else
             echo "run_now=false" >> "$GITHUB_OUTPUT"
